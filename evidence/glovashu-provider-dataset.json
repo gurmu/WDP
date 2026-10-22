@@ -1,0 +1,67 @@
+{
+  "script": "17_create_glovashu_provider_dataset",
+  "task": "E1 Task 1.10 -> T-19 provider substrate",
+  "run_at": "2026-10-19T08:40:02.045403Z",
+  "mode": "apply",
+  "side": "glovashu (PROVIDER for the ingress direction)",
+  "host": "https://dbc-519df5ad-574f.cloud.databricks.com",
+  "target": {
+    "catalog": "awoz1227_glovashu",
+    "schema": "opensharing_provider",
+    "table": "test_dataset",
+    "full_name": "awoz1227_glovashu.opensharing_provider.test_dataset"
+  },
+  "preconditions": {
+    "verdict": "PASSED",
+    "catalog_not_default_or_reserved": true,
+    "catalog_differs_from_primary": true,
+    "means": "The catalog name is unique to glovashu, so a fully-qualified read that succeeds could only have been answered by glovashu."
+  },
+  "origin_metastore_id": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+  "origin_metastore_id_source": "GET /metastore_summary on glovashu",
+  "warehouse": {
+    "name": "Serverless Starter Warehouse",
+    "id": "fa35b04d79850a79",
+    "state": "State.STOPPED"
+  },
+  "statements": [
+    {
+      "name": "create_catalog",
+      "sql": "CREATE CATALOG IF NOT EXISTS awoz1227_glovashu",
+      "state": "StatementState.SUCCEEDED"
+    },
+    {
+      "name": "create_schema",
+      "sql": "CREATE SCHEMA IF NOT EXISTS awoz1227_glovashu.opensharing_provider",
+      "state": "StatementState.SUCCEEDED"
+    },
+    {
+      "name": "create_table",
+      "sql": "CREATE OR REPLACE TABLE awoz1227_glovashu.opensharing_provider.test_dataset ( record_id BIGINT, agency_name STRING, use_case STRING, region STRING, record_date DATE, metric_value DOUBLE, origin_metastore STRING, internal_notes STRING )",
+      "state": "StatementState.SUCCEEDED"
+    },
+    {
+      "name": "insert_rows",
+      "sql": "INSERT INTO awoz1227_glovashu.opensharing_provider.test_dataset SELECT id, element_at(array('Agency Delta','Agency Echo', 'Agency Foxtrot'), CAST((id % 3) + 1 AS INT)), 'CONOPS 2.4.1 D2D ingress demo', element_at(array('eu-west','eu-north','eu-south'), CAST((id % 3) + 1 AS INT)), date_add(current_date(), CAST(-id AS INT)), round(rand() * 1000, 2), '8875961b-9666-494c-95e2-af6b5b78bd3d', 'synthetic",
+      "state": "StatementState.SUCCEEDED"
+    }
+  ],
+  "verification": {
+    "query": "SELECT count(*) AS n, count(DISTINCT origin_metastore) AS n_origins, min(origin_metastore) AS origin FROM awoz1227_glovashu.opensharing_provider.test_dataset",
+    "intended": {
+      "rows": 37,
+      "distinct_origins": 1,
+      "origin": "8875961b-9666-494c-95e2-af6b5b78bd3d"
+    },
+    "observed": {
+      "rows": 37,
+      "distinct_origins": 1,
+      "origin": "8875961b-9666-494c-95e2-af6b5b78bd3d"
+    },
+    "row_count_matches": true,
+    "stamp_matches": true,
+    "distinct_from_primary_row_count": true,
+    "means": "A SUCCEEDED INSERT says the statement ran. These three say the rows exist, carry one origin, and that the origin is the metastore we read the id from -- so a T-19 read that returns these rows can only have been answered by glovashu."
+  },
+  "verdict": "CREATED_AND_VERIFIED"
+}

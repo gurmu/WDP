@@ -1,0 +1,252 @@
+# ---------------------------------------------------------------------------
+# AWOZ-1227 local demo: Gravitee API Management (Community Edition) acting
+# as the micro-perimeter in front of a Databricks OpenSharing endpoint.
+#
+# This is the free, self-hosted stack described in CONOPS AWOZ-1227
+# Section 3.1 (Traffic Control and Serving Configuration, T04-11/AC2) and
+# Section 2.1 (Gravitee terminates and inspects all external control-plane
+# traffic before it reaches Databricks).
+#
+# Everything in this file is open source and runs entirely on your laptop.
+# No Gravitee account, license key, or payment is required for the
+# Community Edition used here.
+# ---------------------------------------------------------------------------
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: awoz1227-mongodb
+    restart: unless-stopped
+    volumes:
+      - gio_data_mongodb:/data/db
+    networks: [frontend, backend]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    container_name: awoz1227-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - gio_data_elasticsearch:/usr/share/elasticsearch/data
+    networks: [frontend, backend]
+    # NOTE: Elasticsearch doubles as the stand-in "SIEM" for the demo.
+    # Gateway access/denial/throttle logs land here and are what
+    # tests/test_t11_trace_correlation.py queries for the AC5 trace proof.
+
+  management_api:
+    image: graviteeio/apim-management-api:4
+    container_name: awoz1227-management-api
+    restart: unless-stopped
+    depends_on: [mongodb, elasticsearch]
+    environment:
+      - gravitee_management_mongodb_uri=mongodb://mongodb:27017/gravitee?serverSelectionTimeoutMS=5000&connectTimeoutMS=5000
+      # NOTE: confirmed by reading gravitee.yml inside the running
+      # container -- this image's real Elasticsearch config key is
+      # ds.elastic.host / ds.elastic.port (defaulting to localhost:9200),
+      # NOT analytics.elasticsearch.endpoints[0], which isn't a real key
+      # in this schema and was silently ignored, leaving the service
+      # trying to reach ES at localhost instead of the elasticsearch
+      # container.
+      - gravitee_ds_elastic_host=elasticsearch
+      - gravitee_ds_elastic_port=9200
+    networks: [backend]
+    ports:
+      - "8083:8083"
+
+  gateway:
+    image: graviteeio/apim-gateway:4
+    container_name: awoz1227-gateway
+    restart: unless-stopped
+    depends_on: [mongodb, elasticsearch]
+    environment:
+      - gravitee_management_mongodb_uri=mongodb://mongodb:27017/gravitee?serverSelectionTimeoutMS=5000&connectTimeoutMS=5000
+      # See the matching note on management_api above -- same fix.
+      - gravitee_ds_elastic_host=elasticsearch
+      - gravitee_ds_elastic_port=9200
+      # The rate-limit/spike-arrest policies build their own Mongo URI
+      # from ds.mongodb.host/port/dbname (NOT from
+      # gravitee_management_mongodb_uri above, which is a separate key
+      # for the management repository only). Those default to
+      # localhost:27017, which nothing is listening on inside this
+      # container, so without this override every request hitting a
+      # rate-limit or spike-arrest policy hangs until timeout. Confirmed
+      # by reading gravitee.yml inside the running container and by
+      # bisecting policies one at a time against a live gateway.
+      - gravitee_ds_mongodb_host=mongodb
+      - gravitee_ds_mongodb_port=27017
+      - gravitee_ds_mongodb_dbname=gravitee
+    networks: [frontend, backend]
+    ports:
+      # This is the "Gravitee edge domain" from CONOPS Section 2.1 step 1.
+      # Reference clients and the credential-file rewrite script point here
+      # instead of at the real Databricks sharing endpoint.
+      - "8082:8082"
+
+  management_console:
+    image: graviteeio/apim-management-ui:4
+    container_name: awoz1227-management-console
+    restart: unless-stopped
+    depends_on: [management_api]
+    environment:
+      - MGMT_API_URL=http://localhost:8083/management/organizations/DEFAULT/environments/DEFAULT/
+    networks: [frontend]
+    ports:
+      - "8084:8080"
+
+  developer_portal:
+    image: graviteeio/apim-portal-ui:4
+    container_name: awoz1227-developer-portal
+    restart: unless-stopped
+    depends_on: [management_api]
+    environment:
+      - PORTAL_API_URL=http://localhost:8083/portal/environments/DEFAULT
+    networks: [frontend]
+    ports:
+      - "8085:8080"
+    # Stands in for the "developer portal (Gravitee portal or Backstage)"
+    # self-registration flow in CONOPS Section 3.4.
+
+  # --- D2O far side: a real open-protocol Delta Sharing provider -------
+  # Not a stand-in. This server implements the Delta Sharing REST
+  # protocol, issues its own bearer token and serves pre-signed URLs for
+  # real Parquet files, which is why T-20, T-21 and T-23 are BUILD. The
+  # CONOPS distinction is between an open-protocol provider we happen to
+  # operate and a *simulation* of one; this is the former.
+  #
+  # Rebuildable from code for AC6 / T-12: the config is tracked as
+  # oss-provider/delta-sharing-server-config.template.yaml and the
+  # secret is injected at render time by scripts/10_setup_oss_provider.py.
+  # Object storage for the D2O provider -- a LOCAL STAND-IN for the
+  # client's S3/ADLS, not a product recommendation.
+  #
+  # NOT a convenience. The Delta Sharing server cannot serve a file://
+  # table at all (docs/11 B-8): /query returns pre-signed URLs and a
+  # local filesystem has no such concept. This service is the minimum
+  # that makes the open-protocol D2O channel testable at all.
+  #
+  # WHY SCALITY AND NOT MINIO. MinIO's community image is no longer
+  # obtainable: 401 from quay.io, access denied from Docker Hub, and
+  # dl.min.io answers 410 GONE for the binary and its checksum -- a
+  # deliberate withdrawal, not a moved URL (docs/11 B-10). Of the four
+  # alternatives that did pull, CloudServer was chosen on one criterion
+  # that is not convenience: it ENFORCES SigV4. scripts/11 check 7 does
+  # a PUT with a GET-signed URL and that refusal is T-21's read-only
+  # evidence. A store that ignored signatures would pass checks 1-6 and
+  # then accept the write, manufacturing a false negative against the
+  # protocol. Garage (dxflrs/garage:v1.0.1) is the fallback.
+  #
+  # THE SERVICE NAME IS DELIBERATELY STORE-NEUTRAL. It ends up inside
+  # the signature of every pre-signed URL (docs/11 B-9), so a product
+  # name here would mean re-editing core-site.xml, /etc/hosts and every
+  # captured T-20 artifact the next time a vendor withdraws an image.
+  # Name the role, not the product.
+  objectstore:
+    # PIN-TARGET -- scripts/12_pin_object_store.sh rewrites the image
+    # line directly below this marker, and refuses to write unless the
+    # reference pulls, reports amd64 (B-6's trap) and yields a
+    # well-formed sha256. Do not hand-edit it from a web page.
+    image: zenko/cloudserver@sha256:b53e57829cf7df357323e60a19c9f98d2218f1b7ccb1d7cea5761a5a227a9ee3
+    container_name: awoz1227_objectstore
+    restart: unless-stopped
+    environment:
+      # Durable on disk rather than in memory: the table must survive a
+      # container restart, or every probe re-run would need --force.
+      S3BACKEND: file
+      SCALITY_ACCESS_KEY_ID: ${OBJECTSTORE_ACCESS_KEY:?set OBJECTSTORE_ACCESS_KEY in .env}
+      SCALITY_SECRET_ACCESS_KEY: ${OBJECTSTORE_SECRET_KEY:?set OBJECTSTORE_SECRET_KEY in .env}
+      # CloudServer validates the Host header against a list of known
+      # endpoints and rejects anything absent from it. `objectstore` is
+      # the name the SERVER resolves, so it must be registered here;
+      # localhost and 127.0.0.1, used by the setup script and the probe
+      # from the host side, are in the image's default list already.
+      ENDPOINT: objectstore
+      # Otherwise it tries to register with Zenko's hosted management
+      # service on startup. A test fixture makes no outbound calls, and
+      # nothing here should be able to fail on someone else's uptime.
+      REMOTE_MANAGEMENT_DISABLE: "1"
+      LOG_LEVEL: info
+    ports:
+      # SAME NUMBER ON BOTH SIDES, and that is load-bearing rather than
+      # tidy: the port is part of the signed URL, so a consumer must
+      # reach it at the number the provider signed. An 8001:8000 mapping
+      # would break every pre-signed fetch with a signature error that
+      # says nothing about ports.
+      - "8000:8000"
+    volumes:
+      - objectstore_data:/usr/src/app/localData
+      - objectstore_metadata:/usr/src/app/localMetadata
+    networks:
+      - backend
+
+  delta_sharing_server:
+    # Built locally, NOT pulled. The upstream image is arm64-only and
+    # exits instantly on this amd64 host -- see oss-provider/Dockerfile
+    # for the finding and the repackaging it does. Pinned by that
+    # Dockerfile's FROM digest, so T-12 rebuilds are deterministic.
+    build:
+      context: ./oss-provider
+      dockerfile: Dockerfile
+    image: awoz1227/delta-sharing-server:0.7.5-amd64
+    container_name: awoz1227_oss_provider
+    restart: unless-stopped
+    # Run as the host user so the 0600 config in _secrets/ is readable.
+    # Without this the container runs as its own uid, cannot open a file
+    # that only uid 1000 can read, and dies on startup -- which would
+    # look like a protocol failure rather than a permissions one.
+    user: "1000:1000"
+    ports:
+      # 8080 is occupied on the build machine and 8082-8085 are
+      # Gravitee's, so the host port is 8086. Container-internal stays
+      # 8080 to match the `port:` key in the rendered config.
+      - "8086:8080"
+    volumes:
+      - ./_secrets/delta-sharing-server-config.yaml:/config/delta-sharing-server-config.yaml:ro
+    # The table now lives in MinIO, so the former read-only bind mount of
+    # ./oss-provider/data is gone. T-21's read-only property has NOT been
+    # weakened by that -- it has moved to a stronger place. The signer
+    # builds GeneratePresignedUrlRequest with HttpMethod.GET (visible in
+    # the class constant pool), so what the recipient receives is a URL
+    # signed for GET only. A PUT with the same URL is refused by the
+    # object store. That is a protocol-level guarantee the recipient
+    # cannot route around, and scripts/11 now tests it directly rather
+    # than inferring read-only from a mount flag we control.
+    environment:
+      # Credentials reach the S3A stack via the AWS SDK's environment
+      # provider, named explicitly in oss-provider/core-site.xml. Keeping
+      # them here rather than in that file is what lets core-site.xml be
+      # tracked in git.
+      AWS_ACCESS_KEY_ID: ${OBJECTSTORE_ACCESS_KEY:?set OBJECTSTORE_ACCESS_KEY in .env}
+      AWS_SECRET_ACCESS_KEY: ${OBJECTSTORE_SECRET_KEY:?set OBJECTSTORE_SECRET_KEY in .env}
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+    depends_on:
+      - objectstore
+    # The bare `--` is required, not decoration: this is an sbt-native
+    # packager launcher, and without the separator it reads `--config`
+    # as a JVM option and exits.
+    command: ["--", "--config", "/config/delta-sharing-server-config.yaml"]
+    networks:
+      - backend
+
+networks:
+  frontend:
+    name: awoz1227-frontend
+  backend:
+    name: awoz1227-backend
+
+volumes:
+  gio_data_mongodb:
+  gio_data_elasticsearch:
+  # Named volumes, not bind mounts: the store keeps its own metadata
+  # layout and does not tolerate a host directory being edited
+  # underneath it. Discarding these loses nothing --
+  # scripts/10_setup_oss_provider.py rebuilds the table
+  # deterministically, which is the AC6 property we want (reproducible
+  # from code, not preserved as binaries in git).
+  objectstore_data:
+  objectstore_metadata:

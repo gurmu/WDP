@@ -1,0 +1,354 @@
+{
+  "test": "E-2 internal consumer egress (D2D, inside the metastore)",
+  "channel": "E-2",
+  "epic_task": "E1 Task 1.10 (outstanding deliverable)",
+  "at": "2026-10-22T07:21:41.639155+00:00",
+  "subject": {
+    "catalog": "awoz1227_demo",
+    "schema": "opensharing_test",
+    "base_table": "awoz1227_demo.opensharing_test.test_dataset",
+    "views": [
+      "v_entitled_t2",
+      "v_entitled_t2_us"
+    ],
+    "warehouse": "8c0153ebb92ae0d4"
+  },
+  "capability_baseline": {
+    "workspace_group_as_uc_principal": {
+      "http_status": 404,
+      "error_code": "PRINCIPAL_DOES_NOT_EXIST",
+      "accepted": false,
+      "means": "UC principals are account-level. A workspace group cannot receive a UC grant, so the matrix's `awoz1227-internal-consumers` group cannot be created as a UC principal on this tier. This is the measured form of the matrix's `implementable: false`."
+    },
+    "mint_credential_for_non_human_principal": {
+      "attempts": [
+        {
+          "method": "POST",
+          "path": "/api/2.0/oauth2/service-principal-secrets",
+          "http_status": 404
+        },
+        {
+          "method": "GET",
+          "path": "/api/2.0/oauth2/service-principal-secrets?service_principal_id=73bc845e-ca36-4b46-9042-db90e29c2c70",
+          "http_status": 404
+        }
+      ],
+      "possible": false,
+      "means": "No credential can be issued for a service principal here, so no request can be made AS the internal consumer. This is why part D of this test is CANNOT_SEE and not a pass."
+    }
+  },
+  "part_a_column_scope": [
+    {
+      "view": "v_entitled_t2",
+      "column": "internal_notes",
+      "kind": "excluded",
+      "through_view": {
+        "state": "FAILED",
+        "error_code": "BAD_REQUEST",
+        "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `internal_notes` cannot be resolved. Did you mean one of the following? [`agency_name`, `record_date`, `use_case`, `metric_value`, `"
+      },
+      "control_on_base_table": {
+        "state": "SUCCEEDED",
+        "error_code": null,
+        "message": ""
+      },
+      "refused_through_view": true,
+      "control_proves_column_exists": true,
+      "boundary_demonstrated": true
+    },
+    {
+      "view": "v_entitled_t2",
+      "column": "record_id,agency_name,use_case,region,record_date,metric_value",
+      "kind": "entitled",
+      "through_view": {
+        "state": "SUCCEEDED",
+        "error_code": null,
+        "message": ""
+      },
+      "entitled_columns_readable": true,
+      "why_this_check": "A view with no columns at all would refuse the excluded column too. This separates 'scoped' from 'broken'."
+    },
+    {
+      "view": "v_entitled_t2_us",
+      "column": "internal_notes",
+      "kind": "excluded",
+      "through_view": {
+        "state": "FAILED",
+        "error_code": "BAD_REQUEST",
+        "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `internal_notes` cannot be resolved. Did you mean one of the following? [`agency_name`, `record_date`, `use_case`, `metric_value`, `"
+      },
+      "control_on_base_table": {
+        "state": "SUCCEEDED",
+        "error_code": null,
+        "message": ""
+      },
+      "refused_through_view": true,
+      "control_proves_column_exists": true,
+      "boundary_demonstrated": true
+    },
+    {
+      "view": "v_entitled_t2_us",
+      "column": "record_id,agency_name,use_case,region,record_date,metric_value",
+      "kind": "entitled",
+      "through_view": {
+        "state": "SUCCEEDED",
+        "error_code": null,
+        "message": ""
+      },
+      "entitled_columns_readable": true,
+      "why_this_check": "A view with no columns at all would refuse the excluded column too. This separates 'scoped' from 'broken'."
+    }
+  ],
+  "part_b_row_scope": [
+    {
+      "view": "v_entitled_t2",
+      "predicate": null,
+      "row_scope": "ALL_ROWS",
+      "base_table_count": 50,
+      "view_count": 50,
+      "view_count_state": "SUCCEEDED",
+      "view_matches_its_predicate": true,
+      "filters_something": false,
+      "row_scope_demonstrated": true,
+      "note": "row_scope ALL_ROWS: the check is that the count EQUALS the base table. A view declared as carrying every row and quietly carrying fewer is a defect in the other direction, and nothing else in this suite would see it."
+    },
+    {
+      "view": "v_entitled_t2_us",
+      "predicate": "region = 'us-east'",
+      "row_scope": "SINGLE_REGION",
+      "base_table_count": 50,
+      "view_count": 16,
+      "view_count_state": "SUCCEEDED",
+      "predicate_count_on_base_table": 16,
+      "view_matches_its_predicate": true,
+      "filters_something": true,
+      "row_scope_demonstrated": true
+    }
+  ],
+  "part_c_deny_row": {
+    "matrix_row": "internal_consumer_group MUST NOT hold SELECT on the base table",
+    "baseline": {
+      "securable": "awoz1227_demo.opensharing_test.test_dataset",
+      "grants": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": []
+      },
+      "select_holders": [],
+      "deny_row_holds": true,
+      "deny_row_state": "CLEAN",
+      "note": "The table OWNER is not listed by this endpoint -- ownership is not a grant. So 'no SELECT holders' means no principal has been GRANTED SELECT; it does not mean the table is unreadable, and the owner can always read it. The deny row is about granted privilege, which is what it says."
+    },
+    "control_principal": {
+      "name": "awoz1227_t19_denial_b_principal",
+      "app_id": "73bc845e-ca36-4b46-9042-db90e29c2c70",
+      "why_this_one": "a real non-owner principal UC accepts; narrower blast radius than `account users`, which also accepts grants here"
+    },
+    "with_control_grant": {
+      "securable": "awoz1227_demo.opensharing_test.test_dataset",
+      "grants": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": [
+          {
+            "principal": "73bc845e-ca36-4b46-9042-db90e29c2c70",
+            "privileges": [
+              "SELECT"
+            ]
+          }
+        ]
+      },
+      "select_holders": [
+        "73bc845e-ca36-4b46-9042-db90e29c2c70"
+      ],
+      "deny_row_holds": false,
+      "deny_row_state": "VIOLATED",
+      "note": "The table OWNER is not listed by this endpoint -- ownership is not a grant. So 'no SELECT holders' means no principal has been GRANTED SELECT; it does not mean the table is unreadable, and the owner can always read it. The deny row is about granted privilege, which is what it says."
+    },
+    "after_revoke": {
+      "securable": "awoz1227_demo.opensharing_test.test_dataset",
+      "grants": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": []
+      },
+      "select_holders": [],
+      "deny_row_holds": true,
+      "deny_row_state": "CLEAN",
+      "note": "The table OWNER is not listed by this endpoint -- ownership is not a grant. So 'no SELECT holders' means no principal has been GRANTED SELECT; it does not mean the table is unreadable, and the owner can always read it. The deny row is about granted privilege, which is what it says."
+    },
+    "probe_verified_by_control": true,
+    "allow_side_grants": {
+      "catalog": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": []
+      },
+      "schema": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": []
+      },
+      "view:v_entitled_t2": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": []
+      },
+      "view:v_entitled_t2_us": {
+        "readable": true,
+        "http_status": 200,
+        "assignments": []
+      }
+    },
+    "allow_side_reading": "Every allow-side securable returns an empty grant list. That is the expected result and it is NOT the matrix's E-2 allow rows being satisfied: the operator reads these views by OWNING them, not by holding a granted SELECT. The matrix calls this out as `local_substitute` and it means the separation of duty between data owner and internal consumer is UNTESTED, not satisfied."
+  },
+  "verdict": "E2_SCOPE_ENFORCED_AND_DENY_ROW_CLEAN_CONSUMER_IDENTITY_NOT_OBSERVABLE",
+  "what_this_closes": "Task 1.10's outstanding deliverable, and the matrix's `tested_by: NONE` on its most important deny row -- partially. The deny row's GRANT STATE now has a probe, and the probe has been shown to move when the privilege it watches is actually granted. The column and row boundaries are demonstrated with controls. What is NOT closed is the identity half; see below.",
+  "what_this_does_not_prove": {
+    "the_consumer_identity": "No request in this test was issued AS an internal consumer, because no credential can be minted for a non-human principal on this tier (three measured 404s in capability_baseline) and UC rejects workspace groups outright (PRINCIPAL_DOES_NOT_EXIST). So this test shows the base table carries no granted SELECT and that a grant would be SEEN -- not that a consumer attempting the read is refused. The difference matters: a UC privilege path this probe does not enumerate (a future grant at catalog or schema level, inherited) would not appear in a table-level grant read.",
+    "inherited_privilege": "probe_deny_row reads the TABLE's own grants. `effective-permissions` was probed and returns {} on this tier for these securables, so inheritance could not be enumerated independently. The catalog and schema grant lists are captured in allow_side_grants and are also empty, which is consistent with no inherited SELECT -- consistent with, not proof of.",
+    "the_other_deny_row": "'must not create or alter a share' is still `tested_by: NONE`. Testing it needs the consumer identity this tier cannot produce, for the same reason.",
+    "ownership_chaining": "Part A shows the excluded column is absent FROM THE VIEW. It does not test what happens when a reader holds SELECT on the view but not on the base table -- the ownership-chaining path that the real deployment would depend on. Same missing identity."
+  },
+  "api_calls": [
+    {
+      "method": "GET",
+      "path": "/api/2.0/sql/warehouses",
+      "at": "2026-10-22T07:21:31.098119+00:00",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.v_entitled_t2_us",
+      "at": "2026-10-22T07:21:31.408591+00:00",
+      "status": 404,
+      "error_code": "PRINCIPAL_DOES_NOT_EXIST"
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/oauth2/service-principal-secrets",
+      "at": "2026-10-22T07:21:31.768327+00:00",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.0/oauth2/service-principal-secrets?service_principal_id=73bc845e-ca36-4b46-9042-db90e29c2c70",
+      "at": "2026-10-22T07:21:31.883778+00:00",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:31.990931+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:32.587257+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:33.304130+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:34.281366+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:34.840302+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:35.557096+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:36.580945+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:37.605219+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:38.270501+00:00",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/2.0/sql/statements",
+      "at": "2026-10-22T07:21:38.936346+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.test_dataset",
+      "at": "2026-10-22T07:21:39.960306+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/catalog/awoz1227_demo",
+      "at": "2026-10-22T07:21:40.091751+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/schema/awoz1227_demo.opensharing_test",
+      "at": "2026-10-22T07:21:40.224389+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.v_entitled_t2",
+      "at": "2026-10-22T07:21:40.379441+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.v_entitled_t2_us",
+      "at": "2026-10-22T07:21:40.505684+00:00",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.test_dataset",
+      "at": "2026-10-22T07:21:40.641572+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.test_dataset",
+      "at": "2026-10-22T07:21:41.086518+00:00",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.test_dataset",
+      "at": "2026-10-22T07:21:41.224576+00:00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/2.1/unity-catalog/permissions/table/awoz1227_demo.opensharing_test.test_dataset",
+      "at": "2026-10-22T07:21:41.495878+00:00",
+      "status": 200
+    }
+  ]
+}

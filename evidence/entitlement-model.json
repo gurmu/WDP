@@ -1,0 +1,283 @@
+{
+  "task": "E1 Task 1.4",
+  "run_at": "2026-10-22T07:34:03.306036Z",
+  "config": "iac/config/entitlements.yaml",
+  "catalog": "awoz1227_demo",
+  "schema": "opensharing_test",
+  "dry_run": false,
+  "closes_defects": [
+    "D-1",
+    "D-2"
+  ],
+  "model": "view_based_only",
+  "masks_and_filters": "FORBIDDEN -- see docs/11 \u00a711.4; refused by the platform at every tier, not a tier limit",
+  "pre_apply_guards": {
+    "refusals": [],
+    "verdict": "PASSED",
+    "means": "These run before anything touches the platform. A select list containing a withheld column is \u00a711.5's defect expressed in config, and it should fail at the edit."
+  },
+  "warehouse_id": "8c0153ebb92ae0d4",
+  "base_table_drift": {
+    "test_dataset": {
+      "declared": [
+        "record_id",
+        "agency_name",
+        "use_case",
+        "region",
+        "record_date",
+        "metric_value",
+        "internal_notes"
+      ],
+      "actual": [
+        "record_id",
+        "agency_name",
+        "use_case",
+        "region",
+        "record_date",
+        "metric_value",
+        "internal_notes"
+      ],
+      "added_since_config": [],
+      "missing_from_platform": [],
+      "verdict": "MATCHES",
+      "means": "A column present on the base table but not declared here has no entitlement decision attached to it. It cannot leak through a view with an explicit select list -- that is the point of EI-2 -- but it also cannot be audited, and nobody has said whether it is entitled."
+    }
+  },
+  "views_applied": {
+    "v_entitled_t2": {
+      "full_name": "awoz1227_demo.opensharing_test.v_entitled_t2",
+      "existed_before": true,
+      "expected_definition": "SELECT record_id, agency_name, use_case, region, record_date, metric_value FROM awoz1227_demo.opensharing_test.test_dataset",
+      "comment_written": "AWOZ-1227 entitled view. tier=T2 dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) purpose=CDAO PSP7 egress demo -- column scope row_scope=ALL_ROWS defined_by=iac/config/entitlements.yaml",
+      "strategy": "ALTER",
+      "strategy_because": "The view exists and may be in a share. CREATE OR REPLACE would be refused by DELTA_SHARING_SECURABLE_DELETE_BLOCKED.BY_SHARES, because REPLACE drops first.",
+      "api_alter": {
+        "http_status": 200,
+        "state": "SUCCEEDED"
+      },
+      "api_comment": {
+        "http_status": 200,
+        "state": "SUCCEEDED"
+      },
+      "verdict": "UPDATED"
+    },
+    "v_entitled_t2_us": {
+      "full_name": "awoz1227_demo.opensharing_test.v_entitled_t2_us",
+      "existed_before": true,
+      "expected_definition": "SELECT record_id, agency_name, use_case, region, record_date, metric_value FROM awoz1227_demo.opensharing_test.test_dataset WHERE region = 'us-east'",
+      "comment_written": "AWOZ-1227 entitled view. tier=T2 dsa_ref=DSA-AWOZ-1227-PSP7-002 (PLACEHOLDER) purpose=CDAO PSP7 egress demo -- column AND row scope row_scope=SINGLE_REGION defined_by=iac/config/entitlements.yaml",
+      "strategy": "ALTER",
+      "strategy_because": "The view exists and may be in a share. CREATE OR REPLACE would be refused by DELTA_SHARING_SECURABLE_DELETE_BLOCKED.BY_SHARES, because REPLACE drops first.",
+      "api_alter": {
+        "http_status": 200,
+        "state": "SUCCEEDED"
+      },
+      "api_comment": {
+        "http_status": 200,
+        "state": "SUCCEEDED"
+      },
+      "verdict": "UPDATED"
+    }
+  },
+  "shares_applied": {
+    "awoz1227-psp7-demo-share": {
+      "declared_objects": [
+        "v_entitled_t2"
+      ],
+      "actions": [
+        {
+          "action": "CREATE_SHARE",
+          "verdict": "ALREADY_EXISTS"
+        },
+        {
+          "action": "UPDATE_OBJECTS",
+          "verdict": "ALREADY_CORRECT"
+        }
+      ],
+      "objects_before": [
+        "awoz1227_demo.opensharing_test.v_entitled_t2"
+      ],
+      "to_add": [],
+      "to_remove": [],
+      "objects_after": [
+        "awoz1227_demo.opensharing_test.v_entitled_t2"
+      ],
+      "object_types_after": [
+        "VIEW"
+      ],
+      "verdict": "MATCHES_CONFIG"
+    },
+    "awoz1227-psp7-t2-us-share": {
+      "declared_objects": [
+        "v_entitled_t2_us"
+      ],
+      "actions": [
+        {
+          "action": "CREATE_SHARE",
+          "verdict": "ALREADY_EXISTS"
+        },
+        {
+          "action": "UPDATE_OBJECTS",
+          "verdict": "ALREADY_CORRECT"
+        }
+      ],
+      "objects_before": [
+        "awoz1227_demo.opensharing_test.v_entitled_t2_us"
+      ],
+      "to_add": [],
+      "to_remove": [],
+      "objects_after": [
+        "awoz1227_demo.opensharing_test.v_entitled_t2_us"
+      ],
+      "object_types_after": [
+        "VIEW"
+      ],
+      "verdict": "MATCHES_CONFIG"
+    }
+  },
+  "verification": {
+    "rule1_base_table_in_no_share": {
+      "verdict": "BASE_TABLE_IN_NO_SHARE",
+      "base_tables": [
+        "awoz1227_demo.opensharing_test.test_dataset"
+      ],
+      "shares_examined": 4,
+      "shares_unreadable": [],
+      "objects_by_share": {
+        "awoz1227-psp7-demo-share": [
+          "awoz1227_demo.opensharing_test.v_entitled_t2"
+        ],
+        "awoz1227-psp7-t2-us-share": [
+          "awoz1227_demo.opensharing_test.v_entitled_t2_us"
+        ],
+        "awoz1227_demo_share1ashu": [
+          "workspace.default.ashu"
+        ],
+        "awoz1227_p18_primary_share": []
+      },
+      "hits": [],
+      "means": "Every share on this metastore was enumerated and its object list read. A check scoped to the two shares this config defines would have passed straight through \u00a711.5's defect, which was a share nobody looked at."
+    },
+    "rules234_per_view": {
+      "v_entitled_t2": {
+        "rule2_no_star": {
+          "verdict": "EXPLICIT_SELECT_LIST",
+          "definition_contains_star": false,
+          "means": "Read from information_schema.views, so it is what the metastore stores. A `SELECT *` here would mean the view gains any column the base table gains, silently and share-wide."
+        },
+        "rule2b_definition_matches_config": {
+          "expected": "SELECT record_id, agency_name, use_case, region, record_date, metric_value FROM awoz1227_demo.opensharing_test.test_dataset",
+          "stored": "SELECT record_id, agency_name, use_case, region, record_date, metric_value FROM awoz1227_demo.opensharing_test.test_dataset",
+          "verdict": "EXACT",
+          "means": "Whitespace and backticks are normalised away; letter case is NOT, because 'us-east' and 'US-EAST' are different predicates over the same rows and must never compare equal."
+        },
+        "rule3_columns": {
+          "declared": [
+            "record_id",
+            "agency_name",
+            "use_case",
+            "region",
+            "record_date",
+            "metric_value"
+          ],
+          "actual": [
+            "record_id",
+            "agency_name",
+            "use_case",
+            "region",
+            "record_date",
+            "metric_value"
+          ],
+          "unexpected": [],
+          "withheld_columns_present": [],
+          "verdict": "EXACT_MATCH",
+          "means": "Equality is required, not containment. A view with the right columns in the wrong order is fine to read and a sign that something other than this config last wrote it."
+        },
+        "rule4_dsa_comment": {
+          "comment": "AWOZ-1227 entitled view. tier=T2 dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) purpose=CDAO PSP7 egress demo -- column scope row_scope=ALL_ROWS defined_by=iac/config/entitlements.yaml",
+          "contains_tier": true,
+          "contains_dsa_ref": true,
+          "placeholder_status_labelled": true,
+          "verdict": "DSA_REF_CARRIED",
+          "means": "\u00a73.3 purpose limitation: a shared object that cannot be traced to the agreement that permitted it cannot be audited. The COMMENT is the only field that travels with the object, and the placeholder status travels with the value so nobody downstream mistakes it for an executed DSA reference."
+        },
+        "row_count": 50
+      },
+      "v_entitled_t2_us": {
+        "rule2_no_star": {
+          "verdict": "EXPLICIT_SELECT_LIST",
+          "definition_contains_star": false,
+          "means": "Read from information_schema.views, so it is what the metastore stores. A `SELECT *` here would mean the view gains any column the base table gains, silently and share-wide."
+        },
+        "rule2b_definition_matches_config": {
+          "expected": "SELECT record_id, agency_name, use_case, region, record_date, metric_value FROM awoz1227_demo.opensharing_test.test_dataset WHERE region = 'us-east'",
+          "stored": "SELECT record_id, agency_name, use_case, region, record_date, metric_value FROM awoz1227_demo.opensharing_test.test_dataset WHERE region = 'us-east'",
+          "verdict": "EXACT",
+          "means": "Whitespace and backticks are normalised away; letter case is NOT, because 'us-east' and 'US-EAST' are different predicates over the same rows and must never compare equal."
+        },
+        "rule3_columns": {
+          "declared": [
+            "record_id",
+            "agency_name",
+            "use_case",
+            "region",
+            "record_date",
+            "metric_value"
+          ],
+          "actual": [
+            "record_id",
+            "agency_name",
+            "use_case",
+            "region",
+            "record_date",
+            "metric_value"
+          ],
+          "unexpected": [],
+          "withheld_columns_present": [],
+          "verdict": "EXACT_MATCH",
+          "means": "Equality is required, not containment. A view with the right columns in the wrong order is fine to read and a sign that something other than this config last wrote it."
+        },
+        "rule4_dsa_comment": {
+          "comment": "AWOZ-1227 entitled view. tier=T2 dsa_ref=DSA-AWOZ-1227-PSP7-002 (PLACEHOLDER) purpose=CDAO PSP7 egress demo -- column AND row scope row_scope=SINGLE_REGION defined_by=iac/config/entitlements.yaml",
+          "contains_tier": true,
+          "contains_dsa_ref": true,
+          "placeholder_status_labelled": true,
+          "verdict": "DSA_REF_CARRIED",
+          "means": "\u00a73.3 purpose limitation: a shared object that cannot be traced to the agreement that permitted it cannot be audited. The COMMENT is the only field that travels with the object, and the placeholder status travels with the value so nobody downstream mistakes it for an executed DSA reference."
+        },
+        "row_count": 16
+      }
+    },
+    "rule5_row_scope": {
+      "all_rows_views": [
+        "v_entitled_t2"
+      ],
+      "scoped_views": [
+        "v_entitled_t2_us"
+      ],
+      "counts": {
+        "v_entitled_t2": 50,
+        "v_entitled_t2_us": 16
+      },
+      "verdict": "ROW_SCOPE_MEASURED",
+      "failing_views": [],
+      "means": "A WHERE clause that matches every row is indistinguishable from no WHERE clause by reading the DDL, and identical in effect. So row scope is asserted here only where a scoped view returns strictly fewer rows than the unscoped one AND more than zero -- an empty view would also satisfy 'fewer'."
+    }
+  },
+  "apply_outcome": {
+    "per_view": {
+      "v_entitled_t2": "UPDATED",
+      "v_entitled_t2_us": "UPDATED"
+    },
+    "failed_or_blocked": [],
+    "verdict": "APPLIED",
+    "means": "Every statement succeeded."
+  },
+  "verdict": "ENTITLEMENT_MODEL_VERIFIED_PROVIDER_SIDE",
+  "scope": "PROVIDER-SIDE ONLY. What is demonstrated: the shares carry views and nothing else, the base table is in no share on this metastore, each view's stored definition has an explicit select list, each view's column set read back from the platform equals its declared one exactly, each carries its tier and DSA reference where an auditor can find them, and row scope is a measured row-count difference rather than the presence of a WHERE clause. What is NOT demonstrated: what a RECIPIENT's Delta Sharing client receives when it asks for table metadata through the issued credential. Task 1.4's verify clause says the recipient sees no internal_notes column at all -- absent, not masked -- and that half is EKI-1, owned by Task 1.7 where T-04 is rebuilt.",
+  "conops_change_required": "\u00a73.1, \u00a72.3.1 and \u00a73.4 step 2 each offer column masks and row filters as an alternative to a view. That alternative does not exist for OpenSharing tables at any tier (\u00a711.4). v1.6 should strike the clause and state the view pattern as the only mechanism, with the platform error attached as evidence. This closes D-1. D-2 closes when Task 1.7 rebuilds T-04 against a share that no longer contains the column it requests.",
+  "defect_history": {
+    "D-1": "CLOSED_BY_MEASUREMENT -- masks and filters refused; view pattern adopted and applied.",
+    "D-2": "HALF_CLOSED -- the share no longer carries the column T-04 requests, so T-04 can now be meaningful. T-04 itself is rebuilt in Task 1.7; until then D-2 stays open, labelled, not deleted (B-19)."
+  }
+}

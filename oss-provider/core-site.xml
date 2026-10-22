@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Hadoop configuration for the Delta Sharing reference server.
+
+  WHY THIS FILE EXISTS. The server cannot serve a `file://` table at all
+  (docs/11 B-8): /query returns PRE-SIGNED URLS, and a local filesystem
+  has no such concept, so the server throws
+      IllegalStateException: File system class
+      org.apache.hadoop.fs.LocalFileSystem is not supported
+  and reports a bare HTTP 500. Object storage is mandatory, not an
+  upgrade. This file points the server's S3A client at the local
+  `objectstore` service instead of at AWS.
+
+  WHY A core-site.xml AND NOT A SERVER SETTING. The server has no
+  endpoint option of its own. Its S3FileSigner obtains an AmazonS3 client
+  from Hadoop's S3ClientFactory – verified 2026-10-18 by reading the
+  class's constant pool, which contains
+      (Ljava/net/URI;)Lcom/amazonaws/services/s3/AmazonS3;
+  and, importantly, does NOT contain AmazonS3ClientBuilder. The AWS SDK
+  builder is the thing that resolves AWS endpoints on its own and would
+  have pinned every signed URL to s3.amazonaws.com; its absence is what
+  makes a local object store viable. Endpoint and path-style therefore
+  come from Hadoop config, and Hadoop reads core-site.xml off the
+  classpath.
+
+  WHY THIS PATH WORKS. /opt/docker/conf is the last entry on the
+  launcher's app_classpath ($lib_dir/../conf), so a file dropped there is
+  found. The Dockerfile copies it in at build time rather than
+  bind-mounting it, so an AC6 / T-12 rebuild cannot miss it.
+
+  WHY IT IS SAFE TO TRACK. No keys here. Credentials reach the S3A stack
+  through the AWS SDK's environment provider, named explicitly below and
+  supplied by docker-compose.yml from .env. That split is the whole point
+  of the file: config in version control, secret injected at run time.
+
+  NO ADJACENT HYPHENS IN THESE COMMENTS. XML forbids the two-hyphen
+  sequence inside a comment. An earlier revision used it as a prose dash
+  and Hadoop's parser rejected the WHOLE FILE with
+      WstxParsingException: String (two hyphens) not allowed in comment
+  logged that at ERROR, and then CONTINUED with default configuration.
+  The server came up healthy and served discovery; every S3A setting
+  below was silently absent, so it would have signed URLs against
+  s3.amazonaws.com. An unparseable config file and a missing one produce
+  the same behaviour, which is the defect shape in docs/12 Sec 12.9.
+  scripts/10_setup_oss_provider.py now parses this file before declaring
+  the provider ready. See docs/11 B-11.
+-->
+<configuration>
+
+  <!-- Registered in core-default.xml for hadoop-aws, but stated here so
+       the binding is visible in the artifact an auditor reads. -->
+  <property>
+    <name>fs.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+  <property>
+    <name>fs.AbstractFileSystem.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3A</value>
+  </property>
+
+  <!-- CONTAINER-side hostname, on the awoz1227-backend network.
+       This value ends up INSIDE the signature of every pre-signed URL,
+       so the consumer must resolve and reach this exact host:port. See
+       docs/11 B-9 – it is the sharpest version of the T-20 lesson, and
+       the reason the compose service is named for its ROLE rather than
+       for whichever product is currently obtainable (B-10). -->
+  <property>
+    <name>fs.s3a.endpoint</name>
+    <value>http://objectstore:8000</value>
+  </property>
+
+  <!-- Bucket in the path, not in the hostname. The store does not serve
+       virtual-host-style buckets, and bucket.objectstore would not
+       resolve on the docker network in any case. Required. -->
+  <property>
+    <name>fs.s3a.path.style.access</name>
+    <value>true</value>
+  </property>
+
+  <!-- Plain HTTP on a private docker network. Stated explicitly so that
+       nothing silently upgrades to TLS against a listener that has none.
+       In the client environment this becomes true and the endpoint gains
+       an https:// scheme; nothing else here changes. -->
+  <property>
+    <name>fs.s3a.connection.ssl.enabled</name>
+    <value>false</value>
+  </property>
+
+  <!-- Pinned to the environment provider on purpose. Hadoop 2.10's
+       default chain ends with the EC2 instance-profile provider, which
+       on a laptop means the first read hangs for minutes trying to reach
+       169.254.169.254 before failing – a timeout that looks nothing
+       like a credentials problem. Naming one provider removes that
+       failure mode and keeps the keys out of this tracked file. -->
+  <property>
+    <name>fs.s3a.aws.credentials.provider</name>
+    <value>com.amazonaws.auth.EnvironmentVariableCredentialsProvider</value>
+  </property>
+
+  <!-- Fail fast. A misconfigured endpoint should surface as an error in
+       the probe, not as a 15-minute retry storm that reads as a hang. -->
+  <property>
+    <name>fs.s3a.attempts.maximum</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>fs.s3a.connection.establish.timeout</name>
+    <value>5000</value>
+  </property>
+  <property>
+    <name>fs.s3a.connection.timeout</name>
+    <value>10000</value>
+  </property>
+
+</configuration>

@@ -1,0 +1,50 @@
+{
+  "probe": "d2d-metastore-identity",
+  "task": "E1 Task 1.2",
+  "run_at": "2026-10-18T10:50:01-0400",
+  "gates": [
+    "T-19 (D2D ingress)",
+    "E-2 proposed test (D2D egress)"
+  ],
+  "probes": {
+    "metastore_identity": {
+      "primary": {
+        "label": "primary",
+        "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+        "status": 200,
+        "metastore_id": "48cda780-1dc7-459d-bee0-77abde9af938",
+        "name": "metastore_aws_us_east_2",
+        "region": "us-east-2",
+        "cloud": "aws",
+        "global_metastore_id": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+        "sharing_identifier": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938"
+      },
+      "glovashu": {
+        "label": "glovashu",
+        "host": "https://dbc-519df5ad-574f.cloud.databricks.com/",
+        "status": 200,
+        "metastore_id": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "name": "metastore_aws_us_east_2",
+        "region": "us-east-2",
+        "cloud": "aws",
+        "global_metastore_id": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "sharing_identifier": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d"
+      },
+      "conclusion": {
+        "verdict": "DISTINCT_METASTORES",
+        "primary": "48cda780-1dc7-459d-bee0-77abde9af938",
+        "glovashu": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "means": "D2D is structurally possible between these two workspaces. Proceed to probe 2, then to the full T-19 sequence and the E-2 egress proposal."
+      }
+    },
+    "databricks_auth_recipient": {
+      "attempt_status": 200,
+      "sharing_identifier_used": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+      "body": "{'name': 'awoz1227_probe_d2d_recipient', 'authentication_type': 'DATABRICKS', 'data_recipient_global_metastore_id': 'aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d', 'owner': 'temari.app@gmail.com', 'comment': 'E1 Task 1.2 capability probe -- safe to delete', 'properties_kvpairs': {'properties': {'databricks.name': 'awoz1227_probe_d2d_recipient', 'databricks.accountId': '160ea28e-5a69-482f-9273-3c76e1894c48', 'databricks.metastoreId': '8875961b-9666-494c-95e2-af6b5b78bd3d'}}, 'created_at': 1",
+      "verdict": "PERMITTED",
+      "means": "Tier accepts DATABRICKS-auth recipients. T-19 is BUILD.",
+      "cleanup_status": 200
+    }
+  },
+  "mode": "two_workspace"
+}

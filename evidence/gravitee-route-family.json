@@ -1,0 +1,11 @@
+{
+  "test_id": "AC6/T-12 material (generation half)",
+  "generated_at": "2026-10-21T20:34:24.438698Z",
+  "verdict": "ROUTE_FAMILY_GENERATED",
+  "recipients_resolved": 3,
+  "recipients_unresolved": 0,
+  "apis_generated": 4,
+  "secret_check": "CLEAN",
+  "manifest": "gravitee/generated/route-family.json",
+  "what_this_does_not_prove": "Generation is not deployment and deployment is not a read. This file records that the definitions were produced from the declared configuration. Whether the gateway accepts them is scripts/05's result, and whether a recipient can read through them is T-01's. Reporting this as 'the gateway route works' would be the \u00a712.4 error."
+}

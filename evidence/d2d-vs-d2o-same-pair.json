@@ -1,0 +1,258 @@
+{
+  "probe": "d2d-vs-d2o-same-pair",
+  "task": "E1 Task 1.10 -> T-19 / proposed E-2",
+  "run_at": "2026-10-19T23:01:50.153001Z",
+  "question": "Can this pair of metastores exchange Delta Sharing data at all? scripts/18 showed the D2D provider object never appears in either direction from a complete verified chain. That verdict names no cause. This narrows it.",
+  "phases": {
+    "mint": {
+      "phase": "mint",
+      "run_at": "2026-10-19T22:42:09.661725Z",
+      "steps": {
+        "share_precondition": {
+          "share": "awoz1227_p18_glovashu_share",
+          "objects": [
+            "awoz1227_glovashu.opensharing_provider.test_dataset"
+          ],
+          "statuses": [
+            "ACTIVE"
+          ],
+          "verdict": "SHARE_NON_EMPTY"
+        },
+        "existing_grants_before": [
+          [
+            "awoz1227_p18_glovashu_recipient",
+            [
+              "SELECT"
+            ]
+          ]
+        ],
+        "create_token_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED"
+        },
+        "grant_share_to_token_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": null
+        },
+        "grant_readback": {
+          "privilege_assignments": {
+            "awoz1227_p18_glovashu_recipient": [
+              "SELECT"
+            ],
+            "awoz1227_p19_token_recipient": [
+              "SELECT"
+            ]
+          },
+          "verdict": "GRANT_IN_EFFECT",
+          "both_credential_modes_on_one_share": true
+        },
+        "activation": {
+          "tokens_present": 1,
+          "activation_pending": [
+            true
+          ],
+          "expiration_time": [
+            1792536131423
+          ],
+          "written_to": "_secrets/glovashu-token-recipient-info.json",
+          "url_recorded_in_evidence": false,
+          "means": "The one-time activation URL is in _secrets/ at mode 0600 and nowhere else. It is NOT in this file and was NOT printed: it is bearer-equivalent for one use."
+        },
+        "credential_lifetime": {
+          "delta_sharing_recipient_token_lifetime_in_seconds": 86400,
+          "means": "Platform-enforced, not chosen: scripts/16 established that this field cannot be omitted. --verify must run inside this window or the credential must be re-minted."
+        }
+      },
+      "verdict": "AWAITING_HUMAN_DOWNLOAD"
+    },
+    "verify": {
+      "phase": "verify",
+      "run_at": "2026-10-19T23:01:21.681971Z",
+      "expected": {
+        "row_count": 37,
+        "origin_metastore": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "distinct_origins": 1,
+        "table_full_name": "awoz1227_glovashu.opensharing_provider.test_dataset",
+        "fixture_source": "evidence/glovashu-provider-dataset.json"
+      },
+      "steps": {
+        "credential_file_mode": {
+          "path": "_secrets/glovashu-d2o-credential.json",
+          "mode_on_arrival": "0o600",
+          "mode_after_correction": "0o600",
+          "arrived_restricted": true,
+          "verdict": "ARRIVED_RESTRICTED",
+          "means": "A browser download lands at the operator's umask. CONOPS 3.4.1 step 3 tells a provisioning process to download the credential file and does not state a file mode, so on this run a live Delta Sharing bearer token was world-readable until the hygiene gate flagged it. Scripted writes in this repo are 0600 because the script sets it; the one human-mediated write was the one that failed. The runbook step needs the mode."
+        },
+        "credential": {
+          "endpoint": "https://b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com/api/2.0/opensharing/metastores/8875961b-9666-494c-95e2-af6b5b78bd3d",
+          "endpoint_host": "b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com",
+          "endpoint_port": null,
+          "share_credentials_version": 1,
+          "fields_present": [
+            "bearerToken",
+            "endpoint",
+            "expirationTime",
+            "icebergEndpoint",
+            "shareCredentialsVersion"
+          ],
+          "bearer_token_length": 64,
+          "bearer_token_sha256_12": "5c1ace126e75",
+          "expiration_time": "2026-10-20T22:42:11.423Z",
+          "endpoint_check": {
+            "endpoint_host": "b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com",
+            "provider_workspace_host": "dbc-519df5ad-574f.cloud.databricks.com",
+            "consumer_workspace_host": "dbc-0c6ebc56-563d.cloud.databricks.com",
+            "verdict": "DEDICATED_SHARING_ENDPOINT",
+            "is_decisive": false,
+            "means": "Databricks serves open sharing from a dedicated <uuid>.opensharing.<region>.cloud.databricks.com host. The uuid is NOT a metastore id -- neither glovashu's nor the primary's -- so this hostname cannot by itself attribute the data to a side. Attribution comes from the origin stamp on the rows.",
+            "allow_list_implication": "Open sharing egress/ingress traverses b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com, not the workspace host. Any outbound allow-list built from DATABRICKS_HOST / GLOVASHU_HOST alone would omit it and the share would fail closed. Candidate addition to iac/config/outbound-allow-list.yaml."
+          }
+        },
+        "create_provider": {
+          "status": 400,
+          "verdict": "PERMITTED_PREEXISTING_UPDATED",
+          "error_code": "PROVIDER_ALREADY_EXISTS",
+          "message": "Provider 'awoz1227_p19_glovashu_provider' already exists",
+          "update_status": 200,
+          "update_error_code": "",
+          "update_message": null,
+          "means": "The provider already existed from an earlier run. Its credential was replaced with the one loaded by THIS run, so the read below goes through the credential on disk rather than whichever one the earlier run installed. If the update was refused, run --cleanup --consumer-only (which removes the provider and catalog on the primary but LEAVES the glovashu recipient, so the credential on disk stays valid) and then --verify again. Plain --cleanup would revoke the recipient and kill that credential, forcing a --mint --rotate for no reason."
+        },
+        "list_provider_shares": {
+          "status": 200,
+          "shares": [
+            "awoz1227_p18_glovashu_share"
+          ],
+          "verdict": "SHARES_LISTED",
+          "means": "This is 2.4.1's SHOW SHARES IN PROVIDER, reached by the TOKEN route. Reaching it here while D2D could not even produce the provider object to run it against is the contrast D-6 is about."
+        },
+        "create_catalog_from_share": {
+          "status": 400,
+          "share": "awoz1227_p18_glovashu_share",
+          "verdict": "PERMITTED_PREEXISTING",
+          "error_code": "CATALOG_ALREADY_EXISTS",
+          "message": "Catalog 'awoz1227_p19_glovashu_catalog' already exists",
+          "means": "Catalog existed from an earlier run. Adopted rather than recreated: it binds to the provider by name and carries no credential, so it serves whatever the refreshed provider now points at."
+        },
+        "read": {
+          "statement": "SELECT count(*) AS n, count(DISTINCT origin_metastore) AS origins, min(origin_metastore) AS origin FROM awoz1227_p19_glovashu_catalog.opensharing_provider.test_dataset",
+          "target": "awoz1227_p19_glovashu_catalog.opensharing_provider.test_dataset",
+          "raw": {
+            "http_status": 200,
+            "state": "SUCCEEDED"
+          },
+          "row_count": 37,
+          "distinct_origins": 1,
+          "origin_metastore": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+          "row_count_matches_fixture": true,
+          "origin_matches_glovashu": true,
+          "verdict": "READ_ATTRIBUTABLE_TO_GLOVASHU",
+          "means": "The fixture (evidence/glovashu-provider-dataset.json) holds 37 rows -- deliberately a different count from the primary's own test_dataset -- each stamped 8875961b-9666-494c-95e2-af6b5b78bd3d. Matching BOTH is what distinguishes reading ACROSS the share from reading a local table of the same name. Matching neither, or only one, is a defect in this probe or a misdirected provider, NOT a pass."
+        }
+      },
+      "verdict": "DATA_PATH_WORKS",
+      "prior_attempts": [
+        {
+          "phase": "verify",
+          "run_at": "2026-10-19T22:49:35.373247Z",
+          "expected": {
+            "row_count": 37,
+            "origin_metastore": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+            "distinct_origins": 1,
+            "table_full_name": "awoz1227_glovashu.opensharing_provider.test_dataset",
+            "fixture_source": "evidence/glovashu-provider-dataset.json"
+          },
+          "steps": {
+            "credential_file_mode": {
+              "path": "_secrets/glovashu-d2o-credential.json",
+              "mode_on_arrival": "0o664",
+              "mode_after_correction": "0o600",
+              "arrived_restricted": false,
+              "verdict": "ARRIVED_PERMISSIVE_CORRECTED",
+              "means": "A browser download lands at the operator's umask. CONOPS 3.4.1 step 3 tells a provisioning process to download the credential file and does not state a file mode, so on this run a live Delta Sharing bearer token was world-readable until the hygiene gate flagged it. Scripted writes in this repo are 0600 because the script sets it; the one human-mediated write was the one that failed. The runbook step needs the mode."
+            },
+            "credential": {
+              "endpoint": "https://b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com/api/2.0/opensharing/metastores/8875961b-9666-494c-95e2-af6b5b78bd3d",
+              "endpoint_host": "b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com",
+              "endpoint_port": null,
+              "share_credentials_version": 1,
+              "fields_present": [
+                "bearerToken",
+                "endpoint",
+                "expirationTime",
+                "icebergEndpoint",
+                "shareCredentialsVersion"
+              ],
+              "bearer_token_length": 64,
+              "bearer_token_sha256_12": "5c1ace126e75",
+              "expiration_time": "2026-10-20T22:42:11.423Z",
+              "endpoint_is_glovashu": false,
+              "warning": "The credential's endpoint host (b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com) is not glovashu's (dbc-519df5ad-574f.cloud.databricks.com). A read through it would not be evidence about the far side."
+            },
+            "create_provider": {
+              "status": 200,
+              "verdict": "PERMITTED",
+              "error_code": "",
+              "message": null
+            },
+            "list_provider_shares": {
+              "status": 200,
+              "shares": [
+                "awoz1227_p18_glovashu_share"
+              ],
+              "verdict": "SHARES_LISTED",
+              "means": "This is 2.4.1's SHOW SHARES IN PROVIDER, reached by the TOKEN route. Reaching it here while D2D could not even produce the provider object to run it against is the contrast D-6 is about."
+            },
+            "create_catalog_from_share": {
+              "status": 200,
+              "share": "awoz1227_p18_glovashu_share",
+              "verdict": "PERMITTED",
+              "error_code": "",
+              "message": null
+            },
+            "read": {
+              "statement": "SELECT count(*) AS n, count(DISTINCT origin_metastore) AS origins, min(origin_metastore) AS origin FROM awoz1227_p19_glovashu_catalog.opensharing_provider.test_dataset",
+              "target": "awoz1227_p19_glovashu_catalog.opensharing_provider.test_dataset",
+              "raw": {
+                "http_status": 200,
+                "state": "SUCCEEDED"
+              },
+              "row_count": 37,
+              "distinct_origins": 1,
+              "origin_metastore": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+              "row_count_matches_fixture": true,
+              "origin_matches_glovashu": true,
+              "verdict": "READ_ATTRIBUTABLE_TO_GLOVASHU",
+              "means": "The fixture (evidence/glovashu-provider-dataset.json) holds 37 rows -- deliberately a different count from the primary's own test_dataset -- each stamped 8875961b-9666-494c-95e2-af6b5b78bd3d. Matching BOTH is what distinguishes reading ACROSS the share from reading a local table of the same name. Matching neither, or only one, is a defect in this probe or a misdirected provider, NOT a pass."
+            }
+          },
+          "verdict": "DATA_PATH_WORKS"
+        }
+      ],
+      "prior_attempts_note": "Earlier runs of this phase, carried forward. A later success must not erase the refusal it was derived from (B-19)."
+    }
+  },
+  "prior_run_at": "2026-10-19T22:49:59.595094Z",
+  "retracted_claims": [
+    {
+      "phase": "verify",
+      "prior_attempt_index": 0,
+      "retracted_text": "The credential's endpoint host (b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com) is not glovashu's (dbc-519df5ad-574f.cloud.databricks.com). A read through it would not be evidence about the far side.",
+      "status": "RETRACTED_OUR_DEFECT_NOT_AN_OBSERVATION",
+      "means": "Produced by this probe's first endpoint check, which compared the credential's endpoint against the provider's WORKSPACE hostname. Databricks serves open sharing from a dedicated <uuid>.opensharing.<region> host, so the check flagged the normal case as a failure. The same run then read rows attributable to glovashu by count and origin stamp, which contradicts the warning. Kept for the record, labelled so it is not read as a platform finding. B-26."
+    }
+  ],
+  "comparison": {
+    "d2d_verdict": "VISIBILITY_UNVERIFIED",
+    "d2d_egress_visible": false,
+    "d2d_ingress_visible": false,
+    "token_path_verdict": "DATA_PATH_WORKS",
+    "variable": "credential mode (DATABRICKS vs TOKEN) on the SAME share, same table, same grant, same provider metastore",
+    "variable_caveat": "Credential mode and surfacing mechanism are entailed by each other; no setting separates them. The comparison narrows the candidate explanations, it does not isolate one component.",
+    "verdict": "D2D_SURFACING_ONLY",
+    "means": "The same table, from the same share, with the same SELECT grant, on the same provider metastore, reached the primary through a TOKEN recipient -- and the rows were attributable to glovashu by both row count and origin stamp. So this pair of metastores DOES exchange Delta Sharing data, the share IS servable, the table IS serveable, the grant IS honoured by the data plane, and the region pairing IS workable. Those five readings of scripts/18's negative are excluded. What remains unexplained is narrower and nameable: with authentication_type = DATABRICKS, no provider object appears on the consuming metastore within ~169s, in either direction, from a fully read-back chain. NOTE THE LIMIT: credential mode and surfacing mechanism are not separable, so this does NOT isolate automatic appearance as the broken component -- it narrows the candidate set to one. For T-19 and E-2 this is the usable result: the D2D confirming calls stay NOT_RUN with a named missing capability, and the open-sharing route is the evidenced substitute path, which is a CONOPS recommendation rather than a dead end."
+  }
+}

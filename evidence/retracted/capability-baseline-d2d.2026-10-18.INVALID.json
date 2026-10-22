@@ -1,0 +1,54 @@
+{
+  "probe": "d2d-metastore-identity",
+  "task": "E1 Task 1.2",
+  "run_at": "2026-10-18T10:27:20-0400",
+  "gates": [
+    "T-19 (D2D ingress)",
+    "E-2 proposed test (D2D egress)"
+  ],
+  "probes": {
+    "metastore_identity": {
+      "primary": {
+        "label": "primary",
+        "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+        "status": 200,
+        "metastore_id": "48cda780-1dc7-459d-bee0-77abde9af938",
+        "name": "metastore_aws_us_east_2",
+        "region": "us-east-2",
+        "cloud": "aws",
+        "global_metastore_id": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+        "sharing_identifier": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938"
+      },
+      "glovashu": {
+        "label": "glovashu",
+        "probed_as": "catalog under the primary metastore",
+        "why": "No GLOVASHU_HOST/GLOVASHU_TOKEN in .env, so there is no second workspace to ask. Asking instead whether glovashu is a catalog here -- which answers probe 1 conclusively in the negative if it is.",
+        "catalog_check": {
+          "status": 200,
+          "looked_for": "workspace",
+          "catalogs_visible": [
+            "awoz1227_demo",
+            "workspace",
+            "samples",
+            "system"
+          ],
+          "found": true,
+          "metastore_id_of_catalog": "48cda780-1dc7-459d-bee0-77abde9af938",
+          "catalog_type": "MANAGED_CATALOG",
+          "owner": "_workspace_admins_workspace_7474651299495580"
+        }
+      },
+      "conclusion": {
+        "verdict": "SAME_METASTORE",
+        "metastore_id": "48cda780-1dc7-459d-bee0-77abde9af938",
+        "evidence": "glovashu is a CATALOG under the primary metastore",
+        "means": "glovashu is a second catalog, not a second metastore. D2D needs two metastores: the recipient is identified by a sharing identifier cloud:region:uuid where the uuid IS the metastore id, so a catalog has no sharing identifier of its own and there is no far side to name.\nCONSEQUENCE: T-19 and the E-2 proposal are NOT_RUN, with 'only one metastore available on this tier' as the stated reason. Record it; do not simulate it. The D2O half (OSS provider) is unaffected and still carries T-20 and T-23."
+      }
+    },
+    "databricks_auth_recipient": {
+      "status": "skipped",
+      "why": "Probe 1 did not establish two distinct metastores."
+    }
+  },
+  "mode": "single_workspace"
+}

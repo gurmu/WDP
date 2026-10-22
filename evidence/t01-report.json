@@ -1,0 +1,38 @@
+[
+  {
+    "test_id": "T-01[psp7-demo]",
+    "description": "the recipient reads its own share through the gateway",
+    "expected": "every discovered protocol path returns 200 through the edge with a body identical to the same path read directly, in the same run, with the same credential -- the direct read being the same-path positive control B-40 requires",
+    "actual": "GATEWAY_READ_FAITHFUL",
+    "passed": true,
+    "date": "2026-10-22T07:38:51.749608Z",
+    "evidence_ref": "evidence/t01-gateway-read.json"
+  },
+  {
+    "test_id": "T-01[psp7-t2-us]",
+    "description": "the recipient reads its own share through the gateway",
+    "expected": "every discovered protocol path returns 200 through the edge with a body identical to the same path read directly, in the same run, with the same credential -- the direct read being the same-path positive control B-40 requires",
+    "actual": "GATEWAY_READ_FAITHFUL",
+    "passed": true,
+    "date": "2026-10-22T07:39:00.658631Z",
+    "evidence_ref": "evidence/t01-gateway-read.json"
+  },
+  {
+    "test_id": "T-01[t02-iplist]",
+    "description": "the recipient reads its own share through the gateway",
+    "expected": "every discovered protocol path returns 200 through the edge with a body identical to the same path read directly, in the same run, with the same credential -- the direct read being the same-path positive control B-40 requires",
+    "actual": "CANNOT_SEE_REFUSED_BY_BOTH_ALLOW_LISTS",
+    "passed": false,
+    "date": "2026-10-22T07:39:00.971096Z",
+    "evidence_ref": "evidence/t01-gateway-read.json"
+  },
+  {
+    "test_id": "T-01b",
+    "description": "the sharing host is bound to the recipient, so one route cannot front all",
+    "expected": "a credential refused on another recipient's route while succeeding on its own, same run, one variable",
+    "actual": "BINDING_ENFORCED_AND_THE_ERROR_NAMES_BOTH_HALVES",
+    "passed": true,
+    "date": "2026-10-22T07:39:01.146918Z",
+    "evidence_ref": "evidence/t01-gateway-read.json"
+  }
+]

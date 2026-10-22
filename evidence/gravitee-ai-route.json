@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-10-21T20:33:35.302150Z",
+  "artifact": "gravitee/generated/api-m1-ai-gateway.json",
+  "context_path": "/ai-gateway-demo",
+  "approved_model": "databricks-gpt-oss-20b",
+  "flows": [
+    "M1-class-E",
+    "M3-explicit-deny-legacy-mcp",
+    "X-terminal-allow-list"
+  ],
+  "not_built": [
+    {
+      "id": "M2",
+      "reason": "METHODS_UNCONFIRMED_AND_TARGET_UNCONFIRMED",
+      "detail": "route-table M2 carries methods_unconfirmed: true -- \u00a72.3.2 gives the method as 'MCP', a protocol rather than an HTTP method. A POST-only selector would silently drop the streamable-HTTP event stream, which is the failure mode that looks like a working route. T-16 settles the methods; until then generating a selector would be guessing in a deployable artifact.",
+      "open_decision": "OD-8"
+    }
+  ],
+  "known_incomplete": [
+    {
+      "id": "AI-1",
+      "what": "Rate limiting cannot be per-consumer on this route.",
+      "why": "Class E keys the limiter on the Authorization header and this route replaces that header with the gateway's single upstream identity, so all callers share one bucket. Per-consumer limits need an API-key or JWT plan, which the prototype does not have.",
+      "conops": "2.3 per-consumer limits; AC2"
+    },
+    {
+      "id": "AI-2",
+      "what": "R12b is unbuilt and untested.",
+      "why": "The gateway holds a long-lived credential. \u00a73.2's shape needs an OAuth client-credentials exchange or workload identity federation so the gateway holds nothing durable. That is a separate build and a separate test, and it is the half OD-4 cares about.",
+      "conops": "3.2; OD-4"
+    },
+    {
+      "id": "AI-3",
+      "what": "The credential is the wrong TYPE, not just the wrong scope.",
+      "why": "A PAT bound to a human operator carries that human's full entitlements. \u00a73.2's least-privilege claim rests on a service principal granted only one consumer's assets. Nothing in this build demonstrates least privilege, and a green T-15 must not be cited for it.",
+      "conops": "3.2; AC4"
+    },
+    {
+      "id": "AI-4",
+      "what": "M3's deny policy id and fields are unverified.",
+      "status": "CLOSED BY MEASUREMENT 2026-10-21 -- it was real.",
+      "why": "Unlike policy-classes.yaml's policies, policy-request-validation was not checked against this installation's schema endpoints. If it fails to load, the flow FORWARDS instead of refusing -- the dangerous direction -- and the upstream 404 would look like a successful block.",
+      "outcome": "B-19, kept in place. The risk above materialised, and not by the mechanism it predicted: the policy LOADED and forwarded anyway, because policy-request-validation validates each rule in turn and an empty `rules` list has nothing to fail. T-16 returned DENY_DOES_NOT_FIRE_THE_EDGE_FORWARDED_THE_REQUEST. The deny is now a `mock` policy whose fields were read from this installation's schema endpoint, and enforcement has moved to the terminal allow-list so a future failure of this policy falls closed.",
+      "what_caught_it": "Not the policy and not the gate. The TEST, because it required Gravitee's own vocabulary instead of accepting any 4xx. An assertion of `status in (401, 403)` would have passed on the upstream's forwarded 401 and this flow would have shipped as a working deny. Worth carrying into v1.6 as a rule about tests, not about policies.",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-7",
+      "what": "The AI route was an open reverse proxy to the whole Databricks workspace REST API. Fixed on this route; the same hole is open on every other API.",
+      "why": "Gravitee prefix-matches the context path and FORWARDS any path that matches no flow selector. This API's target must be the workspace root, so the forwarded path landed on the real REST API. Measured with a valid caller token: /ai-gateway-demo/api/2.0/token/list -> 200, clusters/list -> 200, serving-endpoints -> 200 -- and as the gateway's INJECTED identity, not the caller's, since this route replaces the caller's Authorization. R12a's mechanism is what made the hole worth using.",
+      "fix_on_this_route": "A terminal resource-filtering whitelist derived from the forwarding flows' own selectors, last in the flow array. Verified live before being generated.",
+      "still_open": "scripts/29's APIs have no equivalent. They are confined only because their endpoint target carries a deep base path, so a stray path appends and the upstream 404s -- confinement by URL concatenation, not by a control, and one target edit from being gone. No test asserts it.",
+      "conops": "2.3.2; AC1; AC2",
+      "baseline": "B-48",
+      "status": "OPEN for the estate -- v1.6 input",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-8",
+      "what": "\u00a72.3.2's route table was a documentation allow-list that nothing enforced.",
+      "why": "The table reads as the definitive statement of what each channel exposes, and every generator consumes it, but what the generators emitted were selectors that MATCH listed paths -- never a rule that refuses unlisted ones. A row absent from the table was therefore not absent from the gateway. scripts/29's build_catch_all asserted the opposite ('an unmatched path fails closed because nothing matches it'); that claim is retracted in place in that file.",
+      "conops": "2.3.2",
+      "baseline": "B-48",
+      "status": "OPEN -- v1.6 must say which document is the enforced boundary and which merely describes it",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-5",
+      "what": "M2 is not generated.",
+      "why": "methods_unconfirmed. \u00a72.3.2 gives 'MCP' as the method. A POST-only selector drops the streamable-HTTP event stream silently.",
+      "open_decision": "OD-8",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-6",
+      "what": "The policy-classes.yaml readers are duplicated between scripts/29 and scripts/30, and the copies disagreed.",
+      "why": "Both filenames start with a digit, so neither module is importable by name; the second generator restated the schema rather than importing the reader. The restatement looked for a 'policies' key one level deeper than the file has, caught 2026-10-21 on first run. B-39 with my name on it.",
+      "why_it_mattered": "It crashed only because a list has no .get. A dict without the expected key would have returned an EMPTY policy set via `or []`, emitting the one credential-injecting route in the estate with no common controls -- and it would have imported, started and answered 200.",
+      "mitigation": "Empty is now a hard error in both readers in this script, so the silent-empty path no longer exists here. The duplication itself remains.",
+      "durable_fix": "Move the policy-classes readers into an importable module (scripts/lib/policy_classes.py) and have 29 and 30 both import it. Not done today: it touches a generator whose output T-01 and T-03 currently depend on, and the gates are green.",
+      "status": "OPEN -- v1.6 input",
+      "tests": []
+    }
+  ],
+  "r12_split": {
+    "R12a": "BUILT -- injection by property reference",
+    "R12b": "NOT BUILT -- the gateway holds a long-lived secret",
+    "credential_type": "PERSONAL ACCESS TOKEN, not a service principal OAuth token. \u00a73.2 not demonstrated."
+  },
+  "verdict": "AI_ROUTE_GENERATED_R12A_ONLY"
+}

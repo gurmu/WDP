@@ -1,0 +1,320 @@
+{
+  "definitionVersion": "V4",
+  "type": "PROXY",
+  "listeners": [
+    {
+      "type": "HTTP",
+      "paths": [
+        {
+          "path": "/ai-gateway-demo/",
+          "overrideAccess": false
+        }
+      ],
+      "pathMappings": [],
+      "requestValidation": {
+        "rejectNullByte": true
+      },
+      "entrypoints": [
+        {
+          "type": "http-proxy",
+          "qos": "AUTO"
+        }
+      ],
+      "servers": []
+    }
+  ],
+  "endpointGroups": [
+    {
+      "name": "default-group",
+      "type": "http-proxy",
+      "loadBalancer": {
+        "type": "ROUND_ROBIN"
+      },
+      "endpoints": [
+        {
+          "name": "workspace",
+          "type": "http-proxy",
+          "weight": 1,
+          "inheritConfiguration": false,
+          "configuration": {
+            "target": "https://dbc-0c6ebc56-563d.cloud.databricks.com"
+          },
+          "services": {},
+          "secondary": false,
+          "tenants": []
+        }
+      ],
+      "services": {}
+    }
+  ],
+  "analytics": {
+    "enabled": true
+  },
+  "flowExecution": {
+    "mode": "DEFAULT",
+    "matchRequired": false
+  },
+  "flows": [
+    {
+      "id": "ce8098f8-5e53-408f-8098-f85e53008f70",
+      "name": "M1-class-E",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/serving-endpoints/databricks-gpt-oss-20b/invocations",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "POST"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "Strip the caller's Authorization header",
+          "description": "Step 1 of 2. Removes the caller's credential BEFORE the gateway's is added, so the injection is a replacement. Must stay immediately before the inject step; see _rationale.",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [],
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "Authorization"
+            ]
+          }
+        },
+        {
+          "name": "Inject the gateway's upstream identity (R12a)",
+          "description": "CONOPS 3.2. The external caller holds no Databricks credential; the gateway supplies one. PROTOTYPE: the value is a personal access token, NOT a per-consumer service principal OAuth token -- see _rationale.",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "Authorization",
+                "value": "Bearer {#properties['databricks_upstream_token']}"
+              }
+            ],
+            "scope": "REQUEST",
+            "removeHeaders": []
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 30,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 3,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "f81ea849-9b9b-452d-9ea8-499b9bd52db4",
+      "name": "M3-explicit-deny-legacy-mcp",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/api/2.0/mcp",
+          "pathOperator": "STARTS_WITH",
+          "methods": []
+        }
+      ],
+      "request": [
+        {
+          "name": "Deny legacy managed MCP",
+          "description": "Databricks documents that these bypass Unity AI Gateway grants, policies and guardrails, and their calls do not appear in the tracing tables. A route that is invisible to the audit path cannot satisfy AC5 on any consumer.",
+          "enabled": true,
+          "policy": "mock",
+          "configuration": {
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "X-AWOZ-Refused-By",
+                "value": "M3-explicit-deny"
+              }
+            ],
+            "content": "{\n  \"error\": \"route_not_exposed\",\n  \"marker\": \"AWOZ-1227-M3-LEGACY-MCP-DENIED-AT-THE-EDGE\",\n  \"route_id\": \"M3\",\n  \"refused_by\": \"AWOZ-1227 edge, by explicit decision\",\n  \"reason\": \"Databricks documents that these bypass Unity AI Gateway grants, policies and guardrails, and their calls do not appear in the tracing tables. A route that is invisible to the audit path cannot satisfy AC5 on any consumer.\",\n  \"conops_ref\": \"\\u00a72.3.2 row M3; \\u00a73.1.2\"\n}",
+            "status": "403"
+          }
+        }
+      ],
+      "response": [],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "9fc78311-cb7d-4658-8783-11cb7d365813",
+      "name": "X-terminal-allow-list",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/",
+          "pathOperator": "STARTS_WITH",
+          "methods": []
+        }
+      ],
+      "request": [
+        {
+          "name": "Allow only the paths the route table names",
+          "description": "Fails closed on every path no flow claims. Without this, an unmatched path is FORWARDED to the workspace root -- measured 2026-10-21, see _rationale.",
+          "enabled": true,
+          "policy": "resource-filtering",
+          "configuration": {
+            "decodeEncodedSlash": true,
+            "normalizeRequestPath": true,
+            "whitelist": [
+              {
+                "methods": [
+                  "POST"
+                ],
+                "pattern": "/serving-endpoints/databricks-gpt-oss-20b/invocations"
+              }
+            ]
+          }
+        }
+      ],
+      "response": [],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    }
+  ],
+  "allowedInApiProducts": true,
+  "allowMultiJwtOauth2Subscriptions": false,
+  "id": "2b2663a8-45a5-4d69-a663-a845a58d6928",
+  "name": "AWOZ-1227 E3 AI Gateway",
+  "description": "Channel E-3: one approved model service (M1), an explicit deny carrying the CONOPS reason for legacy managed MCP (M3), and a TERMINAL ALLOW-LIST that refuses every path no flow claims. Without that last flow an unmatched path is forwarded to the workspace root, which made this route an open proxy to the whole Databricks REST API (AI-7). PROTOTYPE -- injects a personal access token, not a per-consumer service principal OAuth token. See the generated _rationale blocks.",
+  "apiVersion": "1.0.0",
+  "deployedAt": "2026-10-21T20:54:49.306Z",
+  "createdAt": "2026-10-21T20:43:52.779Z",
+  "updatedAt": "2026-10-21T20:54:49.306Z",
+  "disableMembershipNotifications": false,
+  "groups": [],
+  "state": "STARTED",
+  "deploymentState": "DEPLOYED",
+  "visibility": "PRIVATE",
+  "labels": [],
+  "lifecycleState": "CREATED",
+  "tags": [],
+  "primaryOwner": {
+    "id": "715e0b73-efb9-4e1c-9e0b-73efb94e1c1d",
+    "displayName": "admin",
+    "type": "USER"
+  },
+  "categories": [],
+  "originContext": {
+    "origin": "MANAGEMENT"
+  },
+  "definitionContext": {
+    "origin": "MANAGEMENT",
+    "mode": "FULLY_MANAGED",
+    "syncFrom": "MANAGEMENT"
+  },
+  "responseTemplates": {},
+  "resources": [],
+  "properties": [
+    {
+      "key": "databricks_upstream_token",
+      "value": "",
+      "encrypted": false,
+      "dynamic": false,
+      "_redacted_by": "tests/t16_mcp_route.py",
+      "_redacted_because": "The live API carries the filled credential. Writing it to evidence/ would put a working Databricks PAT in a committed artifact (\u00a73.6). check_secret_hygiene caught exactly this on 2026-10-21.",
+      "_refill_with": "python3 scripts/05_import_gravitee_api.py --definition gravitee/generated/api-m1-ai-gateway.json, which fills this property from DATABRICKS_TOKEN and CONFIRMS it landed on the server before reporting success."
+    }
+  ],
+  "_links": {
+    "pictureUrl": "http://localhost:8083/management/v2/environments/DEFAULT/apis/2b2663a8-45a5-4d69-a663-a845a58d6928/picture?hash=1792616089306",
+    "backgroundUrl": "http://localhost:8083/management/v2/environments/DEFAULT/apis/2b2663a8-45a5-4d69-a663-a845a58d6928/background?hash=1792616089306"
+  }
+}

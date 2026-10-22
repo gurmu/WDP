@@ -1,0 +1,324 @@
+{
+  "probe": "d2d-direction-symmetry",
+  "task": "E1 Task 1.10 -> T-19 / proposed E-2",
+  "run_at": "2026-10-19T22:05:17.315166Z",
+  "poll_bound_seconds": 180,
+  "poll_interval_seconds": 15,
+  "directions": {
+    "egress": {
+      "direction": "egress",
+      "run_at": "2026-10-19T21:59:18.913917Z",
+      "provider": {
+        "label": "primary",
+        "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+        "identifier": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+        "delta_sharing_scope": "INTERNAL_AND_EXTERNAL"
+      },
+      "recipient": {
+        "label": "glovashu",
+        "host": "https://dbc-519df5ad-574f.cloud.databricks.com",
+        "identifier": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "delta_sharing_scope": "INTERNAL_AND_EXTERNAL"
+      },
+      "scope_note": "Provider-side INTERNAL_AND_EXTERNAL is required and documented. Any recipient-side requirement is undocumented; both sides are recorded so a future run with differing scopes can settle it.",
+      "source_table": {
+        "lookup": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "table_type": "MANAGED",
+        "data_source_format": "DELTA"
+      },
+      "objects": {
+        "share": "awoz1227_p18_primary_share",
+        "recipient": "awoz1227_p18_primary_recipient",
+        "source_table": "awoz1227_demo.opensharing_test.test_dataset"
+      },
+      "steps": {
+        "create_share": {
+          "status": 200,
+          "verdict": "PERMITTED"
+        },
+        "add_table_to_share": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "create_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED"
+        },
+        "grant_share_to_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "grant_readback": {
+          "status": 200,
+          "privilege_assignments": [
+            {
+              "principal": "awoz1227_p18_primary_recipient",
+              "privileges": [
+                "SELECT"
+              ]
+            }
+          ],
+          "privileges": [
+            "SELECT"
+          ],
+          "verdict": "GRANT_IN_EFFECT"
+        },
+        "share_contents_readback": {
+          "status": 200,
+          "objects": [
+            "awoz1227_demo.opensharing_test.test_dataset"
+          ],
+          "statuses": [
+            "ACTIVE"
+          ],
+          "verdict": "SHARE_NON_EMPTY"
+        },
+        "recipient_readback": {
+          "status": 200,
+          "data_recipient_global_metastore_id": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+          "expected": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+          "matches_recipient_side": true,
+          "authentication_type": "DATABRICKS",
+          "activated": null,
+          "means": "A recipient naming the wrong metastore grants cleanly and is invisible on the side we then watch -- indistinguishable from a visibility failure without this read-back."
+        }
+      },
+      "visibility": {
+        "rest_list_providers": {
+          "GET /providers": {
+            "status": 200,
+            "verdict": "PERMITTED",
+            "error_code": "",
+            "message": ""
+          },
+          "providers_visible": [],
+          "polling": {
+            "polls": 12,
+            "interval_seconds": 15,
+            "bound_seconds": 180,
+            "elapsed_seconds": 168.7,
+            "stopped_because": "bound reached"
+          }
+        },
+        "sql_show_providers": {
+          "warehouse_id": "fa35b04d79850a79",
+          "raw": {
+            "status": 200,
+            "state": "SUCCEEDED"
+          },
+          "rows": [],
+          "verdict": "EMPTY"
+        },
+        "instrument_agreement": {
+          "rest": [],
+          "sql": [],
+          "agree": true,
+          "means": "Two independent instruments on the same question. Agreement removes 'we used the wrong call' as an explanation for an empty list. DISAGREEMENT would itself be the finding and outrank everything else in this file."
+        }
+      },
+      "instruments": "BOTH",
+      "conclusion": {
+        "chain": "COMPLETE",
+        "chain_steps": {
+          "create_share": "PERMITTED",
+          "add_table_to_share": "PERMITTED",
+          "create_recipient": "PERMITTED",
+          "grant_share_to_recipient": "PERMITTED"
+        },
+        "readbacks_verified": {
+          "grant": true,
+          "share_contents": true,
+          "recipient_identifier": true
+        },
+        "provider_visible": false,
+        "providers": [],
+        "confounds": null,
+        "instruments": "BOTH",
+        "verdict": "NO_PROVIDER_CLEAN_NEGATIVE",
+        "means": "PROVIDER_APPEARED: this direction surfaces a provider object; the confirming calls of 2.4.1 are available here. NO_PROVIDER_CLEAN_NEGATIVE: a complete chain, every link verified by read-back, both instruments agreeing, bounded poll -- a finding to chase, not a step to retry, and still not attributable to DIRECTION until the other direction has been run. NO_PROVIDER_SINGLE_INSTRUMENT: the same, except only GET /providers reported, so 'we used the wrong call' is not yet excluded. NO_PROVIDER_WITH_CONFOUNDS: not usable as a control; fix the listed confounds and re-run."
+      },
+      "left_in_place": {
+        "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+        "share": "awoz1227_p18_primary_share",
+        "recipient": "awoz1227_p18_primary_recipient",
+        "means": "--keep was passed. These are LIVE objects and must be removed by a run without --keep or by hand in the console."
+      }
+    },
+    "ingress": {
+      "direction": "ingress",
+      "run_at": "2026-10-19T22:02:19.855386Z",
+      "provider": {
+        "label": "glovashu",
+        "host": "https://dbc-519df5ad-574f.cloud.databricks.com",
+        "identifier": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "delta_sharing_scope": "INTERNAL_AND_EXTERNAL"
+      },
+      "recipient": {
+        "label": "primary",
+        "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+        "identifier": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+        "delta_sharing_scope": "INTERNAL_AND_EXTERNAL"
+      },
+      "scope_note": "Provider-side INTERNAL_AND_EXTERNAL is required and documented. Any recipient-side requirement is undocumented; both sides are recorded so a future run with differing scopes can settle it.",
+      "source_table": {
+        "lookup": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "table_type": "MANAGED",
+        "data_source_format": "DELTA"
+      },
+      "objects": {
+        "share": "awoz1227_p18_glovashu_share",
+        "recipient": "awoz1227_p18_glovashu_recipient",
+        "source_table": "awoz1227_glovashu.opensharing_provider.test_dataset"
+      },
+      "steps": {
+        "create_share": {
+          "status": 200,
+          "verdict": "PERMITTED"
+        },
+        "add_table_to_share": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "create_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED"
+        },
+        "grant_share_to_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "grant_readback": {
+          "status": 200,
+          "privilege_assignments": [
+            {
+              "principal": "awoz1227_p18_glovashu_recipient",
+              "privileges": [
+                "SELECT"
+              ]
+            }
+          ],
+          "privileges": [
+            "SELECT"
+          ],
+          "verdict": "GRANT_IN_EFFECT"
+        },
+        "share_contents_readback": {
+          "status": 200,
+          "objects": [
+            "awoz1227_glovashu.opensharing_provider.test_dataset"
+          ],
+          "statuses": [
+            "ACTIVE"
+          ],
+          "verdict": "SHARE_NON_EMPTY"
+        },
+        "recipient_readback": {
+          "status": 200,
+          "data_recipient_global_metastore_id": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+          "expected": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+          "matches_recipient_side": true,
+          "authentication_type": "DATABRICKS",
+          "activated": null,
+          "means": "A recipient naming the wrong metastore grants cleanly and is invisible on the side we then watch -- indistinguishable from a visibility failure without this read-back."
+        }
+      },
+      "visibility": {
+        "rest_list_providers": {
+          "GET /providers": {
+            "status": 200,
+            "verdict": "PERMITTED",
+            "error_code": "",
+            "message": ""
+          },
+          "providers_visible": [],
+          "polling": {
+            "polls": 12,
+            "interval_seconds": 15,
+            "bound_seconds": 180,
+            "elapsed_seconds": 168.3,
+            "stopped_because": "bound reached"
+          }
+        },
+        "sql_show_providers": {
+          "warehouse_id": "8c0153ebb92ae0d4",
+          "raw": {
+            "status": 200,
+            "state": "SUCCEEDED"
+          },
+          "rows": [],
+          "verdict": "EMPTY"
+        },
+        "instrument_agreement": {
+          "rest": [],
+          "sql": [],
+          "agree": true,
+          "means": "Two independent instruments on the same question. Agreement removes 'we used the wrong call' as an explanation for an empty list. DISAGREEMENT would itself be the finding and outrank everything else in this file."
+        }
+      },
+      "instruments": "BOTH",
+      "conclusion": {
+        "chain": "COMPLETE",
+        "chain_steps": {
+          "create_share": "PERMITTED",
+          "add_table_to_share": "PERMITTED",
+          "create_recipient": "PERMITTED",
+          "grant_share_to_recipient": "PERMITTED"
+        },
+        "readbacks_verified": {
+          "grant": true,
+          "share_contents": true,
+          "recipient_identifier": true
+        },
+        "provider_visible": false,
+        "providers": [],
+        "confounds": null,
+        "instruments": "BOTH",
+        "verdict": "NO_PROVIDER_CLEAN_NEGATIVE",
+        "means": "PROVIDER_APPEARED: this direction surfaces a provider object; the confirming calls of 2.4.1 are available here. NO_PROVIDER_CLEAN_NEGATIVE: a complete chain, every link verified by read-back, both instruments agreeing, bounded poll -- a finding to chase, not a step to retry, and still not attributable to DIRECTION until the other direction has been run. NO_PROVIDER_SINGLE_INSTRUMENT: the same, except only GET /providers reported, so 'we used the wrong call' is not yet excluded. NO_PROVIDER_WITH_CONFOUNDS: not usable as a control; fix the listed confounds and re-run."
+      },
+      "left_in_place": {
+        "host": "https://dbc-519df5ad-574f.cloud.databricks.com",
+        "share": "awoz1227_p18_glovashu_share",
+        "recipient": "awoz1227_p18_glovashu_recipient",
+        "means": "--keep was passed. These are LIVE objects and must be removed by a run without --keep or by hand in the console."
+      }
+    }
+  },
+  "comparison": {
+    "egress": {
+      "chain": "COMPLETE",
+      "provider_visible": false,
+      "instruments": "BOTH",
+      "usable_as_control": true,
+      "confounds": null
+    },
+    "ingress": {
+      "chain": "COMPLETE",
+      "provider_visible": false,
+      "instruments": "BOTH",
+      "usable_as_control": true,
+      "confounds": null
+    },
+    "single_variable": "direction",
+    "verdict": "VISIBILITY_UNVERIFIED",
+    "means": "NEITHER direction surfaced a provider, from a complete and fully read-back chain in each, within the stated bound. The honest report is that D2D provider visibility is UNVERIFIED in this environment. It is NOT a direction-specific finding and NOT a Free Edition constraint -- no permitted case exists anywhere in this repo to contrast against, so the tier reading is unexcluded and must not be asserted. T-19's confirming calls (2.4.1's SHOW PROVIDERS / SHOW SHARES IN PROVIDER) are reported NOT_RUN with this named missing capability, per the epic's own rule, and the same applies to E-2."
+  }
+}

@@ -1,0 +1,521 @@
+schema_version: 1
+conops: AWOZ-1227 v1.5
+section: 2.3 (policy classes), 3.1 (AC2 perimeter controls)
+owner: E2 Task 2.4
+borrowed_into: E1 Task 1.6 / E2 Task 2.1 consolidation, 2026-10-21
+
+status: PROTOTYPE_DEFAULT_NOT_COMMITMENT
+status_because: >-
+  §2.3 says the class values are "proposals to be tuned in the Section 5
+  tests; they are not commitments". So the numbers below are STARTING
+  VALUES. T-05 measures them and the tuned values are recorded as T-05
+  output in evidence/, NOT by editing the numbers here. Editing them in
+  place would destroy the before-picture that makes a tuning result
+  attributable -- the same reason §11.7 B-33b exists.
+
+why_this_file_exists_now: >-
+  iac/config/route-table.yaml names a policy_class on every exposed row
+  and points at THIS FILE as the source for what a class contains. The
+  file did not exist. A generator reading route-table.yaml therefore had
+  two options: invent the class contents, or refuse. Inventing them would
+  have put policy numbers into a deployed gateway with no recorded
+  provenance, which is the failure §12.4 is about. This file closes that
+  gap with declared defaults and an explicit PROTOTYPE label, so the
+  generator can run and a reader can tell a default from a decision.
+
+# ---------------------------------------------------------------------
+# Policy identifiers and configuration field names
+# ---------------------------------------------------------------------
+# Every `policy` string and every configuration field name below was
+# confirmed against THIS installation's own schema endpoints
+# (/management/v2/.../plugins/policies/{id}/schema) during the build of
+# gravitee/api-definition.json. They are verified, not guessed. A policy
+# id that is right in Gravitee's documentation and wrong in 4.12.23
+# imports as an API with a silently missing policy -- the API starts,
+# returns 200, and enforces nothing.
+platform:
+  product: Gravitee APIM
+  version: 4.12.23
+  definition_version: V4
+  field_names_verified_against: this installation's plugins/policies schema endpoints
+  verified_when: 2026-10-18
+  carried_from: gravitee/api-definition.json
+
+# ---------------------------------------------------------------------
+# The common set: applied to every exposed route regardless of class
+# ---------------------------------------------------------------------
+common:
+  applies_to: "every route with `exposed: true`"
+  rule: >-
+    A control in the common set is not repeated inside a class. If a class
+    needs a DIFFERENT value for a common control it overrides it by name
+    in `overrides`, which is visible in the generated definition. Silent
+    duplication with two different values is how a perimeter ends up
+    enforcing the one nobody meant.
+  request:
+    - name: Require bearer token present
+      policy: policy-assign-attributes
+      conops: 3.1 / 2.1 step 2
+      enabled: true
+      configuration:
+        scope: REQUEST
+        attributes:
+          - name: has-bearer
+            value: "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+      note: >-
+        Presence and well-formedness only. The gateway does NOT validate
+        the token -- Databricks does, at step 4. This is the key
+        architectural principle in §1 and the reason the plans are
+        KEY_LESS.
+    - name: Inject correlation ID
+      policy: transform-headers
+      conops: AC5 / T-11
+      enabled: true
+      configuration:
+        addHeaders:
+          - name: X-Correlation-Id
+            value: "{#request.id}"
+      note: >-
+        Cross-referenced against system.access.audit by T-11. The header
+        must be ADDED on the request so it appears in both logs; a
+        response-side correlation id correlates nothing.
+  response:
+    - name: Header redaction
+      policy: transform-headers
+      conops: 2.1 step 5 / 3.1
+      enabled: true
+      configuration:
+        removeHeaders:
+          - X-Databricks-Org-Id
+          - X-Databricks-Request-Id
+          - Server
+          - Via
+          - server-timing
+          - x-request-id
+          - X-Gravitee-Request-Id
+          - X-Gravitee-Transaction-Id
+      measured_state_superseded: >-
+        T-07 FAILS AS CONFIGURED. A working 200 through the gateway was
+        observed leaking `server: databricks`, `server-timing`,
+        `x-request-id` and X-Gravitee-* headers. The first four names in
+        this list were in api-definition.json already and the leak
+        happened anyway, which means the list was incomplete -- `Server`
+        with a capital S does not match `server` if the policy compares
+        case-sensitively, and `server-timing` / `x-request-id` were never
+        listed at all. The last four names are added here as the
+        candidate fix and are UNVERIFIED until T-07 re-runs.
+      measured_state_superseded_note: >-
+        Carried in place, not deleted (B-19). It was right about the
+        cause and wrong about the remedy for two of the five headers.
+      measured_state: >-
+        PARTIALLY VERIFIED 2026-10-21 by T-01's before/after capture
+        (same path, same credential, same run, direct response beside the
+        gateway response). THREE of the five leaked headers are now gone
+        through the edge and still present direct -- `server`,
+        `server-timing` and `x-request-id` -- so for those the diagnosis
+        above was correct and this list is the fix. TWO survive:
+        `x-gravitee-request-id` and `x-gravitee-transaction-id`. Listing
+        them here does NOT remove them and the entries are retained only
+        so the attempt is on the record. See `unreachable_by_policy`.
+        Evidence: evidence/t01-gateway-read.json, per_recipient[*]
+        .routes[*].headers.
+      unreachable_by_policy:
+        headers:
+          - x-gravitee-request-id
+          - x-gravitee-transaction-id
+        why: >-
+          These are the gateway's OWN correlation headers, attached by
+          Gravitee outside the API's policy chain. A response
+          transform-headers policy runs BEFORE they exist, so it cannot
+          remove them. This is not an incomplete list; it is the wrong
+          layer.
+        remedy: >-
+          Gateway configuration (the gateway's http/report settings), not
+          an API definition. Which means it is NOT expressible in the
+          per-API definitions scripts/29 generates.
+        consequence_for_t12: >-
+          AC6 / T-12 claim "redeploy from code". A fix that lives in
+          gateway config is outside the IaC set this repository
+          currently versions, so the claim has a hole here until the
+          gateway's own configuration is captured as code too. Recorded
+          rather than fixed, because widening the IaC scope is an E2
+          decision, not a Task 1.6 one.
+        consequence_for_conops: >-
+          §2.3's header-hygiene language assumes policy is sufficient to
+          control the perimeter's response surface. It is not. Two
+          headers naming the gateway, its request and its transaction
+          reach every recipient. T-07 should assert the three headers it
+          CAN control and record these two as a configuration item with
+          an owner -- failing on all five hides the distinction between
+          a misconfiguration and an architectural limit.
+        status: OPEN -- v1.6 input
+      must_not_remove:
+        - delta-sharing-capabilities
+      must_not_remove_because: >-
+        §2.3.2 requires the capability header to pass through on S7. The
+        sanitizer and the passthrough requirement meet on that one route,
+        and a remove-list written as "strip everything unrecognised"
+        takes this one with it. Allow-list the removals, never deny-list
+        them -- same rule as the IPv4 redaction convention.
+
+# ---------------------------------------------------------------------
+# Classes A-E
+# ---------------------------------------------------------------------
+classes:
+
+  A:
+    name: Metadata and discovery reads
+    routes: [S1, S2, S3, S4, S5, S6, S7]
+    methods: [GET]
+    character: >-
+      Cheap, idempotent, no request body, no credential vending, no bulk
+      data. A client browsing a share hits these repeatedly and
+      legitimately, so the limit is the loosest of the five.
+    request:
+      - name: Rate limit (per-consumer quota)
+        policy: rate-limit
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          rate:
+            limit: 60
+            periodTime: 1
+            periodTimeUnit: MINUTES
+            key: "{#request.headers['Authorization']}"
+        key_note: >-
+          Keyed on the Authorization header because the plans are
+          KEY_LESS, so Gravitee has no subscription to key on. This is a
+          per-CREDENTIAL limit, which is the per-consumer limit §3.1 asks
+          for only while one credential means one consumer. If a
+          recipient's credential is shared between two consuming systems
+          the limit is shared too, and that is not visible at the edge.
+          Recorded as a limitation of the KEY_LESS choice, not a defect.
+      - name: Spike arrest (burst protection)
+        policy: spike-arrest
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          spike:
+            limit: 5
+            periodTime: 1
+            periodTimeUnit: SECONDS
+    response: []
+    body_schema: null
+    body_schema_because: GET routes carry no body.
+
+  B:
+    name: Data queries
+    routes: [S8, S9]
+    methods: [POST, GET]
+    methods_note: >-
+      S8 is POST, S9 is GET. The class spans both, and the generated
+      selectors must name the method per route -- route-table.yaml's
+      selector_rule is explicit that a path-only selector silently files
+      S8 under class A, because S7 and S8 overlap on path. If the
+      generated definition shows S7 and S8 in the same flow, the
+      generator is wrong and T-05 will measure the wrong class while
+      looking correct.
+    character: >-
+      This is where data actually leaves. Tighter than A, and the only
+      class that validates a request body.
+    request:
+      - name: Rate limit (per-consumer quota)
+        policy: rate-limit
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          rate:
+            limit: 20
+            periodTime: 1
+            periodTimeUnit: MINUTES
+            key: "{#request.headers['Authorization']}"
+      - name: Spike arrest (burst protection)
+        policy: spike-arrest
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          spike:
+            limit: 2
+            periodTime: 1
+            periodTimeUnit: SECONDS
+      - name: Request schema validation
+        policy: json-validation
+        conops: 3.1 / T-06
+        enabled: true
+        configuration_source: iac/gravitee/schemas/query-body.schema.json
+        configuration_status: PENDING_E2_TASK_2_4
+        configuration_fallback:
+          schema: '{"type":"object","additionalProperties":true}'
+        configuration_fallback_because: >-
+          `additionalProperties: true` validates nothing. It is carried as
+          the fallback so the policy is PRESENT and visible in the
+          definition rather than absent, because an absent policy and a
+          permissive one are indistinguishable in a deployed gateway and
+          only one of them is a decision. T-06 against this fallback can
+          only return CANNOT_SEE. route-table.yaml S8 already declares the
+          real allowed field list (predicateHints, jsonPredicateHints,
+          limitHint, version, timestamp, startingVersion, endingVersion)
+          with additional_properties false; the schema file is the one
+          artifact missing.
+    response:
+      - name: Rewrite signed URLs to the storage proxy
+        policy: DEFERRED
+        route: S8, S9
+        status: NOT_BUILT
+        conops: OD-1(b) / T-08 / F1
+        because: >-
+          §2.3.2 requires the pre-signed URLs in S8 and S9 response bodies
+          to be rewritten to the F1 edge path. The response is
+          NEWLINE-DELIMITED JSON, one file action per line, so a rewrite
+          written against a single-document assumption silently leaves
+          every line after the first untouched (route-table.yaml S8
+          f1_rewrite_note). No verified APIM 4.12.23 policy for an
+          ndjson-aware body rewrite has been confirmed on this
+          installation, so this is recorded as NOT_BUILT rather than
+          configured wrong. OD-1's documented fallback applies: storage
+          address limits plus short-lived credentials.
+    body_schema: iac/gravitee/schemas/query-body.schema.json
+
+  C:
+    name: Credential vending
+    routes: [S10]
+    methods: [POST]
+    character: >-
+      The tightest class. A successful call here hands the caller a
+      credential for object storage, so the blast radius of an
+      over-permissive limit is larger than on any data route.
+    route_path_unconfirmed: true
+    route_path_unconfirmed_because: >-
+      route-table.yaml S10 records the path as a CANDIDATE expansion of
+      §2.3.2's abbreviated "POST /temporary-table-credentials", not a
+      confirmed one, settled by E2 Task 2.3. A selector on the wrong path
+      matches nothing, the request falls through to X, and the resulting
+      refusal would be recorded as an edge control working. That is a
+      silent negative and it is why this class is generated with a
+      `path_unconfirmed` marker in the output.
+    request:
+      - name: Rate limit (per-consumer quota)
+        policy: rate-limit
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          rate:
+            limit: 10
+            periodTime: 1
+            periodTimeUnit: MINUTES
+            key: "{#request.headers['Authorization']}"
+      - name: Spike arrest (burst protection)
+        policy: spike-arrest
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          spike:
+            limit: 1
+            periodTime: 1
+            periodTimeUnit: SECONDS
+    response:
+      - name: Header redaction (storage identifiers)
+        policy: transform-headers
+        enabled: true
+        configuration:
+          removeHeaders:
+            - X-Amz-Request-Id
+            - X-Amz-Id-2
+    body_schema: null
+
+  D:
+    name: File download through the storage proxy
+    routes: [F1]
+    methods: [GET, HEAD]
+    listener: storage_proxy_listener
+    listener_because: >-
+      F1 gets its OWN HTTP listener at /storage-proxy, not a flow selector
+      beneath the sharing listener. route-table.yaml's
+      storage_proxy_listener rule and document defect D-4: as §2.3.2 is
+      written F1 sits under the sharing listener, which makes the real
+      edge path /delta-sharing/storage-proxy while .env declares
+      http://localhost:8082/storage-proxy. .env is the source of truth.
+      This is §11.7 B-3's fix.
+    character: >-
+      Bulk bytes. Range requests must pass, and the signed query string
+      must be forwarded UNCHANGED -- any rewrite of it invalidates the
+      signature, which turns a working download into a 403 that looks
+      like a storage-side refusal.
+    range_requests: ALLOWED
+    signed_query_string: FORWARD_UNCHANGED
+    request:
+      - name: Rate limit (per-consumer quota)
+        policy: rate-limit
+        conops: 3.1 / T-05
+        enabled: true
+        configuration:
+          rate:
+            limit: 120
+            periodTime: 1
+            periodTimeUnit: MINUTES
+            key: "{#request.headers['Authorization']}"
+        limit_note: >-
+          Higher than class A on purpose. One logical table read fans out
+          into one request per file action, so a limit tuned for "one call
+          per user action" refuses a legitimate single query. T-05 should
+          measure the fan-out factor before this number is settled.
+      - name: Forward signed request to storage
+        policy: policy-http-callout
+        enabled: false
+        enabled_false_because: >-
+          policy-http-callout's schema on this installation requires a
+          static or EL-expression `url`, and the real pre-signed URL
+          exists only per-request inside the S8/S9 response body. There is
+          no clean header or static value to point it at without an
+          extraction step this prototype has not built. Carried DISABLED
+          and visible rather than omitted. §2.2 step 6 and §3.2 allow this
+          outcome explicitly: record the OD-1 fallback result for T-08.
+        configuration:
+          method: GET
+          url: "{#request.headers['X-Signed-Url'][0]}"
+    response:
+      - name: Header redaction (storage identifiers)
+        policy: transform-headers
+        enabled: true
+        configuration:
+          removeHeaders:
+            - X-Amz-Request-Id
+            - X-Amz-Id-2
+            - Server
+    prototype_limit: >-
+      T-08's REFUSAL half is not provable on this tier. Free Edition
+      storage is Databricks-managed, so storage-side egress restrictions
+      cannot be set, and "the client could not reach storage directly"
+      cannot be demonstrated. Record the OD-1 fallback, not a refusal that
+      was never produced.
+
+  E:
+    name: AI routes
+    routes: [M1, M2]
+    methods: [POST, GET]
+    target: workspace_host
+    character: >-
+      Model serving (M1) and Unity Gateway MCP (M2). Unlike classes A-D
+      these sit in front of a service that has ITS OWN rate limiter, which
+      makes this the only class where the question "whose limit refused
+      this" is live.
+    request:
+      - name: Rate limit (per-consumer quota)
+        policy: rate-limit
+        conops: 3.1 / T-05 / T-15
+        enabled: true
+        configuration:
+          rate:
+            limit: 30
+            periodTime: 1
+            periodTimeUnit: MINUTES
+            key: "{#request.headers['Authorization']}"
+      - name: Spike arrest (burst protection)
+        policy: spike-arrest
+        conops: 3.1 / T-05 / T-15
+        enabled: true
+        configuration:
+          spike:
+            limit: 3
+            periodTime: 1
+            periodTimeUnit: SECONDS
+    response: []
+    precedence_problem:
+      what: >-
+        Two limiters in series. Gravitee's class E limit and the
+        Databricks-side limit on model serving / Unity Gateway. A burst
+        that gets refused tells you a limit fired; it does not tell you
+        WHICH, and the two refusals can look alike to the caller.
+      why_it_matters: >-
+        T-15's rate-limit evidence is worthless unless the refusing
+        limiter is named. If Gravitee's limit is looser than the
+        platform's, every refusal in the evidence is the platform's and
+        the gateway control is untested while appearing to pass. That is
+        §12.9's silent negative with the sign flipped -- the B-40 class.
+      discriminator: >-
+        The two refusals differ in body and headers: Gravitee returns its
+        own error envelope and the X-Gravitee-* headers, the platform
+        returns the Databricks error shape. The burst must be run twice,
+        once with the Gravitee limit set BELOW the observed platform limit
+        and once above, and the refusing party identified from the
+        response body in each. A burst at one setting cannot establish
+        precedence.
+      status: NOT_YET_MEASURED
+      owner: E1 Task 1.9 part 3
+
+  deny:
+    name: Not forwarded
+    routes: [M3, A1, X]
+    exposed: false
+    enforcement: >-
+      No upstream. The flow terminates at the edge and returns the
+      protocol error format. X is the catch-all and it must be LAST --
+      a catch-all evaluated before a specific route swallows it.
+    request:
+      - name: Deny at the edge
+        policy: policy-assign-attributes
+        enabled: true
+        status: PLACEHOLDER_SHAPE
+        status_because: >-
+          The correct policy for a terminal edge refusal on this
+          installation (mock, request-validation with a hard fail, or
+          simply no endpoint group) has not been confirmed against the
+          plugins/policies schema endpoints. Until it is, this row records
+          the INTENT and the generator emits the deny routes with
+          `generated: false` so nobody reads an un-built deny as a built
+          one.
+    m3_note: >-
+      M3 (legacy managed MCP) carries a live silent negative. Both
+      candidate upstream paths -- /api/2.0/mcp/servers and
+      /api/2.1/unity-catalog/mcp-servers -- return 404 UPSTREAM on this
+      tier. So an edge block and an absent endpoint produce the same
+      observation, and T-16's M3 half cannot distinguish them without a
+      positive control. Either find a path that returns non-404 upstream
+      and block that, or close M3 as CANNOT_SEE with the upstream 404
+      recorded as the reason. Do not report the 404 as the deny working.
+
+# ---------------------------------------------------------------------
+invariants:
+  - Every policy_class value used in route-table.yaml exists in `classes`.
+  - Every class with `exposed` routes has at least one request policy.
+  - No control in the common set is repeated inside a class except through `overrides`.
+  - >-
+    S7 (class A) and S8 (class B) must land in DIFFERENT generated flows.
+    If they share one, the generator used a path-only selector and T-05 is
+    measuring the wrong class.
+  - Class D's routes sit on `storage_proxy_listener`, never on the sharing listener.
+  - >-
+    No class carries a hostname, a token or a credential path. Hosts
+    resolve through route-table.yaml `targets`; secrets appear only as
+    .env references (§3.6).
+  - >-
+    Every `enabled: false` policy carries an `enabled_false_because`, and
+    every PENDING or PLACEHOLDER status carries a `_because`. A disabled
+    control with no reason is indistinguishable from a forgotten one.
+
+known_incomplete:
+  - id: PC-1
+    what: iac/gravitee/schemas/query-body.schema.json does not exist.
+    consequence: >-
+      Class B's json-validation runs the permissive fallback, so T-06 can
+      only return CANNOT_SEE. The allowed field list is already declared
+      in route-table.yaml S8, so writing the schema is mechanical.
+    owner: E2 Task 2.4
+  - id: PC-2
+    what: The S10 path is a candidate expansion, not confirmed.
+    consequence: Class C may be generated onto a path that matches nothing.
+    owner: E2 Task 2.3
+  - id: PC-3
+    what: No verified ndjson-aware body-rewrite policy for F1's URL rewrite.
+    consequence: Class B's response rewrite is NOT_BUILT; OD-1 fallback applies.
+    owner: E2 / OD-1
+  - id: PC-4
+    what: The terminal-deny policy shape is unconfirmed on this installation.
+    consequence: "The deny class emits with `generated: false`."
+    owner: E2 Task 2.4
+  - id: PC-5
+    what: T-07's expanded removeHeaders list is unverified.
+    consequence: >-
+      Four header names were added after a measured leak. Until T-07
+      re-runs, the fix is a hypothesis.
+    owner: E2 / T-07

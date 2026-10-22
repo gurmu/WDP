@@ -1,0 +1,73 @@
+{
+  "probe": "21",
+  "question": "Does a newly shared object appear in the consumer's catalog through the passage of TIME, or through a consumer-side PROVIDER UPDATE?",
+  "date": "2026-10-20T07:59:49Z",
+  "subject": {
+    "object": "t19_refresh_probe_1792481192",
+    "shared_schema": "opensharing_provider",
+    "t19_date": "2026-10-20T07:22:41.844003Z",
+    "t19_absent_seconds": 170.8,
+    "t19_bound_seconds": 180,
+    "t19_polls": 12,
+    "t19_carry_forward": "STANDING_OBJECT_NOW_READABLE_CATALOG_DOES_REFRESH"
+  },
+  "watch_seconds": 900,
+  "poll_interval_seconds": 30,
+  "excluded_before_this_probe": {
+    "snapshot_at_catalog_create": "Excluded by T-19's carry_forward_prior_probe: an object added AFTER this catalog was created is readable through it, with the ordering measured from share.added_at against catalog.created_at.",
+    "warehouse_side_caching": "Excluded by T-19's object_metadata_check: the tables API, which has no warehouse in the path, reported the object absent from the consumer's metadata while listing an older one."
+  },
+  "steps": {
+    "share_membership": {
+      "status": 200,
+      "added_at": 1792481212648,
+      "age_minutes": 33.0,
+      "verdict": "IN_SHARE",
+      "means": "The object must still be in the share for any read below to mean anything. No timestamp means the age figures are unavailable, not zero."
+    },
+    "phase1_control_read": {
+      "status": 200,
+      "tables_listed": [
+        "t19_refresh_probe",
+        "t19_refresh_probe_1792481192",
+        "test_dataset"
+      ],
+      "present": true,
+      "verdict": "PRESENT",
+      "means": "No mutation has been performed by this probe and, per T-19's record, none has been performed by anything else since the object was added. PRESENT here means time alone did it."
+    },
+    "phase2_watch": {
+      "verdict": "NOT_RUN_ALREADY_PRESENT",
+      "means": "Nothing to wait for."
+    },
+    "bounds": {
+      "lower_bound_seconds": 170.8,
+      "lower_bound_source": "T-19's object_visibility: observed ABSENT this long after the ADD",
+      "upper_bound_seconds": 1978.0,
+      "upper_bound_source": "age of the share membership at this probe's first PRESENT read",
+      "unmeasured_gap_seconds": 1807.2,
+      "tightest_upper_bound_across_runs": 1978.0,
+      "strongest_lower_bound_across_runs": 170.8,
+      "aggregation_means": "Each run observes the same mechanism on its own object, so the smallest PRESENT age and the largest ABSENT age are the best bounds the repo holds. They may come from different runs, which is why both are carried rather than overwritten -- a re-run of this probe has a LOOSER upper bound than its first run by construction, since the object keeps ageing.",
+      "verdict": "BRACKETED",
+      "means": "The object appeared somewhere in a 1807.2s window that nobody watched: absent at 170.8s, present at 1978.0s, and no observation in between. The resolution of this figure is that gap -- NOT the 30s poll interval, which only describes how often this probe asked once it started asking. Quoting 1978.0s as a latency would claim precision the run does not have."
+    },
+    "phase3_provider_update": {
+      "verdict": "NOT_RUN_ANSWER_ALREADY_IN_HAND",
+      "means": "The object appeared with no consumer-side action, so the provider update is not required to explain it and running one would only muddy the record."
+    }
+  },
+  "prior_runs": [
+    {
+      "date": "2026-10-20T07:44:14Z",
+      "object": "t19_refresh_probe_1792481192",
+      "verdict": "REFRESH_IS_TIME_BASED",
+      "lower_bound_seconds": null,
+      "upper_bound_seconds": null,
+      "unmeasured_gap_seconds": null,
+      "age_minutes_at_read": 17.4
+    }
+  ],
+  "verdict": "REFRESH_IS_TIME_BASED",
+  "conops_implication": "A newly shared object appears in the consumer's existing catalog WITHOUT any consumer-side action: no re-import, no provider update, no catalog recreate. It was observed ABSENT 170.8s after the share membership was created and PRESENT at 1978.0s, with a 1807.2s window in between that was not observed. So \u00a72.4.1 needs a TIMING expectation on the consumer side rather than a re-provision step: the consumer waits. Both ends are real observations and the middle is not -- the honest statement is 'later than 170.8s and no later than 1978.0s', and a runbook that prints 1978.0s as the refresh latency is quoting a number this run cannot support. What IS safe to put in the runbook is the floor: a consumer who polls for three minutes and raises a defect is raising a false one. Tightening the upper end means re-running this probe against a fresh object with a watch window that covers the gap."
+}

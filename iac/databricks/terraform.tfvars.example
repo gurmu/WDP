@@ -1,0 +1,5 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored;
+# this example is not. Nothing secret belongs in this file.
+databricks_host  = "https://dbc-REPLACE.cloud.databricks.com"
+databricks_token = "REPLACE_FROM_YOUR_SECRET_STORE"
+warehouse_id     = "REPLACE"

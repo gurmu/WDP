@@ -1,0 +1,303 @@
+# iac/config/channels.yaml
+#
+# HAND-AUTHORED, VERSION-CONTROLLED SOURCE OF TRUTH.
+#
+# CONOPS AWOZ-1227 v1.5 §2.1 ("Boundary and Channels") is a table in a
+# Word document. AC1 rests on it, and §2.3.2 (routes), §2.3.3 (policy
+# classes) and §2.4.6 (ingress controls) all have to resolve against the
+# same five channels. This file is that one source. E1 Task 1.3.
+#
+# TWO STATUS FIELDS, DELIBERATELY. `conops_status` is what the document
+# claims. `prototype_status` is what this prototype has actually shown,
+# with its evidence file named. Collapsing them into one field is how a
+# claim becomes indistinguishable from a measurement -- and three of the
+# five rows below differ between the two.
+#
+# Where the prototype CONTRADICTS the document, the row says so in
+# `conops_correction` rather than silently carrying the corrected value.
+# Those corrections are the v1.6 input.
+#
+# Related files:
+#   route-table.yaml          §2.3.2 routes; every route names its channel
+#   outbound-allow-list.yaml  I-1 outbound hosts, generated from capture
+#   allow-lists.yaml          gateway egress CIDRs (E1 Task 1.5, pending)
+#   access-matrix.yaml        §3.1 group grants (E1 Task 1.11, pending)
+
+schema_version: 1
+
+conops:
+  document: CONOPS_AWOZ-1227_v1.5.docx
+  version: v1.5
+  sections: ["2.1", "2.2", "2.3", "2.4"]
+  milestone: AWOZ-1227
+  increment: INC17
+
+# Vocabulary, so a generator can branch on these rather than on prose.
+enums:
+  direction: [egress, ingress]
+  conops_status: [baseline, documented, proposed]
+  prototype_status:
+    - NOT_STARTED            # no code has run against this channel
+    - PARTIAL                # some steps exercised, named gaps remain
+    - DEMONSTRATED_WITH_SCOPE # end to end, with the scope stated in evidence
+    - CORRECTED_BY_MEASUREMENT # built, and it falsified a CONOPS clause
+  control_side: [gateway_edge, databricks, outbound, none]
+
+# §2.1: "The platform boundary is crossed by five channels. Three carry
+# data or calls out to external consumers (egress, E-1 to E-3) and two
+# bring data in (ingress, I-1 and I-2). Every channel has one external
+# control point, one Databricks-side control and one set of tests."
+channels:
+
+  - id: E-1
+    name: Egress, OpenSharing D2O
+    direction: egress
+    mechanism: >-
+      External consumer reads shared tables with an open-protocol client.
+    gravitee_fronts: true
+    gravitee_scope: [control_plane, file_download]
+    external_control_point: gateway_edge
+    databricks_control: >-
+      UC share and table grants; recipient token or OIDC.
+    conops_status: baseline
+    conops_ref: "§2.1 row E-1; flow in §2.2; routes in §2.3.2"
+    routes: [S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, F1]
+    tests: [T-01, T-02, T-03, T-04, T-05, T-06, T-07, T-08, T-09, T-11, T-17]
+    tests_basis: >-
+      Tests whose subject is this channel, per §1.5 and §10.1. T-11 and
+      T-17 are shared with AC5 and AC4 but exercise E-1 traffic.
+    prototype_status: PARTIAL
+    prototype_note: >-
+      The gateway path has returned 200 on S1 and S5 against the live
+      share, and T-03's address refusal passed. The control-plane half
+      is real; F1's proxy forward, the policy classes and the header
+      sanitization are E2 work and unbuilt.
+    evidence:
+      - docs/11-environment-baseline.md#B-1
+      - evidence/t03-refusal.json
+    defects: [D-1, D-2, B-1, B-3]
+
+  - id: E-2
+    name: Egress, OpenSharing D2D
+    direction: egress
+    mechanism: >-
+      A Databricks consumer reads the share through its own metastore.
+    gravitee_fronts: false
+    gravitee_not_fronted_because: >-
+      OD-6: outside the gateway, with its own controls. Databricks
+      manages the provider-to-consumer connection; there is no client
+      request for a reverse proxy to terminate.
+    external_control_point: databricks
+    databricks_control: >-
+      UC share grants; recipient metastore identifier.
+    conops_status: documented
+    conops_ref: "§2.1 row E-2 -- 'tested if a test recipient exists'"
+    routes: []
+    routes_note: >-
+      No gateway routes by design. A row here with a route id would be
+      a configuration error, not an omission.
+    tests: []
+    tests_gap: >-
+      CONOPS §5.2 defines NO test for E-2. The condition the document
+      attached to testing it -- "if a test recipient exists" -- is now
+      satisfied: the second account `glovashu` is a distinct metastore
+      (`8875961b-...`) and a DATABRICKS-authentication recipient was
+      created and deleted on this tier. The prototype therefore adds
+      `tests/e2_egress_d2d.py`, which §5.2 should absorb in v1.6.
+    prototype_status: CORRECTED_BY_MEASUREMENT
+    conops_correction:
+      finding: D2D_SURFACING_ONLY
+      what_conops_implies: >-
+        §2.4.1 step 5 has the consumer run SHOW PROVIDERS and then
+        CREATE CATALOG ... USING SHARE, which presumes a provider object
+        appears on the consuming metastore.
+      what_was_measured: >-
+        With `authentication_type = DATABRICKS`, no provider object
+        appears on the consuming metastore on this tier. Four
+        independent bounded negatives, each stating what it looked at.
+      consequence: >-
+        The D2D consumer-side sequence as written cannot be followed
+        here. T-19 ran its ingress half through the open-sharing
+        substitute instead, which is why the finding is labelled rather
+        than worked around.
+    evidence:
+      - evidence/capability-baseline-d2d.json
+      - evidence/t19-ingress-d2d.json
+
+  - id: E-3
+    name: Egress, API and MCP
+    direction: egress
+    mechanism: >-
+      External apps and agents call model services, MCP servers and
+      approved Databricks APIs.
+    gravitee_fronts: true
+    gravitee_scope: [model_serving, mcp, approved_rest_apis]
+    external_control_point: gateway_edge
+    databricks_control: >-
+      UC permissions; Unity AI Gateway for AI assets.
+    conops_status: baseline
+    conops_scope_limit: >-
+      "Baseline for one model service and one MCP server" -- one of
+      each, not the catalogue.
+    conops_ref: "§2.1 row E-3; §2.3.2 rows M1, M2, M3; §3.2 caller identity"
+    routes: [M1, M2, M3, A1]
+    tests: [T-15, T-16]
+    tests_basis: >-
+      T-17 also touches this channel (onboarding creates a model or MCP
+      route per §10.1 row 4.2) but is listed on E-1, where it is scored.
+    prototype_status: PARTIAL
+    prototype_note: >-
+      Unity AI Gateway is live at /ml/ai-gateway with thirteen governed
+      models and an MCPs tab. `databricks-gpt-oss-20b` answered HTTP 200
+      directly, so M1's capability question is closed and R11 is
+      downgraded. What is unbuilt is the gateway route itself, and with
+      it R12 (edge-side token injection). M2 stays open on one narrower
+      question: whether the MCPs tab holds a callable server on this
+      tier.
+    evidence:
+      - evidence/capability-baseline-ai.json
+      - docs/11-environment-baseline.md#11.6
+    caveats:
+      - >-
+        The M1 probe used max_tokens=16 and returned finish_reason
+        'length' with a reasoning-only block, so the full response shape
+        is NOT yet captured. A route built against that shape would be
+        built against a truncation.
+      - >-
+        `content` is an array of typed blocks, not an OpenAI string. Any
+        schema policy on M1 must validate the array form.
+
+  - id: I-1
+    name: Ingress, pull
+    direction: ingress
+    mechanism: >-
+      The platform reads a share published by an external provider
+      (D2D or D2O).
+    gravitee_fronts: false
+    gravitee_not_fronted_because: >-
+      The platform opens the connection, so there is nothing inbound for
+      a reverse proxy to front. Control moves to the outbound side
+      (§2.4.3, "pull only").
+    external_control_point: outbound
+    databricks_control: >-
+      Read-only recipient catalog; UC grants by group; vault custody.
+    conops_status: baseline
+    conops_ref: "§2.1 row I-1; §2.4.1 to §2.4.4"
+    routes: []
+    routes_note: >-
+      No gateway routes. The perimeter control for this channel is
+      outbound-allow-list.yaml, not the route table.
+    tests: [T-19, T-20, T-21, T-22, T-23, T-25]
+    prototype_status: DEMONSTRATED_WITH_SCOPE
+    prototype_note: >-
+      T-20 (D2O) ran end to end, PASS_WITH_SCOPE, and generated the
+      outbound allow-list from an observed socket capture shown to be
+      necessary and sufficient. T-19 is PARTIAL_WITH_NAMED_GAPS: share
+      membership and identity are both demonstrated as enforced
+      boundaries, each with a paired positive control.
+    scope_that_travels_with_the_result:
+      - >-
+        T-20's host filter is in-process, so it proves the read DEPENDS
+        on those hosts -- not that a firewall would enforce it.
+      - >-
+        All seven §2.4.2 roles were worn by one operator. The sequence
+        and the artefacts are evidence; the segregation of duties is
+        not.
+      - >-
+        The captured hostnames are local and do NOT transfer. Per §2.4.3
+        the deliverable is the capture PROCEDURE, which Databricks does
+        not document.
+    conops_correction:
+      finding: REFRESH_IS_TIME_BASED
+      what_conops_says: >-
+        §2.4.4 refresh row: "A scheduled job at the agreed cadence."
+      what_was_measured: >-
+        A newly shared object appears in the consumer's existing catalog
+        with NO consumer-side action -- no re-import, no provider
+        update, no catalog recreate. Snapshot-at-create is excluded (an
+        object added after the catalog's created_at became readable) and
+        warehouse caching is excluded (the tables API, with no warehouse
+        in the path, reported it absent). Bracketed: absent at 170.8s,
+        present by 1044s, with the middle unobserved and declared.
+      consequence: >-
+        §2.4.1/§2.4.4 should state that share membership propagates on a
+        platform-side timer, so a consumer pipeline must not assume that
+        an object absent immediately after a provider ADD is absent, and
+        must not treat its later appearance as evidence that some
+        consumer-side step caused it.
+    evidence:
+      - evidence/t20-ingress-d2o.json
+      - evidence/t19-ingress-d2d.json
+      - evidence/t19-refresh-trigger.json
+      - iac/config/outbound-allow-list.yaml
+    defects: [D-6]
+
+  - id: I-2
+    name: Ingress, push
+    direction: ingress
+    mechanism: >-
+      An external app or agent uploads a file or payload through an API
+      route.
+    gravitee_fronts: true
+    gravitee_scope: [push_ingest]
+    external_control_point: gateway_edge
+    databricks_control: >-
+      Service principal with write access to one landing volume only.
+    conops_status: proposed
+    conops_open_decision: OD-9
+    conops_ref: "§2.1 row I-2; §2.4.5; §2.4.6"
+    routes: []
+    routes_gap: >-
+      §2.3.2 gives I-2 no route id. The push route is specified in
+      §2.4.5 prose only, so the route table cannot express its policy
+      class or its exposure decision. v1.6 should give it an id in
+      §2.3.2 like every other exposed path; until then this file records
+      the absence rather than inventing one.
+    tests: [T-24, T-25]
+    prototype_status: NOT_STARTED
+    prototype_note: >-
+      The six refusal paths are pure gateway policy and buildable. The
+      successful upload needs a service principal with WRITE VOLUME,
+      unconfirmed on this tier, and content scanning has no named owner
+      (OD-9). Carries R12.
+    confinement: >-
+      §2.4.5 confines uploads to the test environment until the
+      content-scanning owner is named.
+
+# Cross-cutting facts that belong with the channel model rather than in
+# any one channel, because a reader checking AC1 will look for them here.
+boundary_invariants:
+  - id: BI-1
+    statement: >-
+      Ingress is controlled on the outbound side, because a reverse
+      proxy cannot front a connection the platform opens itself.
+    conops_ref: "§1.3 key architectural principle; §2.4.3"
+    applies_to: [I-1]
+  - id: BI-2
+    statement: >-
+      Because the protocol sends recipients directly to storage for the
+      data plane, storage-side controls are part of the perimeter.
+    conops_ref: "§1.3; OD-1(b); route F1"
+    applies_to: [E-1]
+    prototype_limit: >-
+      Free Edition storage is Databricks-managed, so storage-side egress
+      restrictions cannot be set here. T-08 records the OD-1 fallback
+      instead of a refusal it cannot produce.
+  - id: BI-3
+    statement: >-
+      Deny by default. Routes not listed in §2.3.2 are denied, and the
+      denial is made explicit by route X rather than left to the
+      gateway's own 404.
+    conops_ref: "§2.3.2; §3.2 capability table"
+    applies_to: [E-1, E-3, I-2]
+  - id: BI-4
+    statement: >-
+      A recipient IP access list limits calls to the gateway egress
+      addresses, so bypassing the gateway fails even with a valid token.
+    conops_ref: "§2.3.1; §3.1.1"
+    applies_to: [E-1, E-2]
+    prototype_status: CONFIRMED_AVAILABLE
+    prototype_note: >-
+      Confirmed working on this tier (§11.3), which makes T-02 a real
+      refusal rather than a simulated one and strengthens R4 and R7
+      beyond what the CONOPS claims. This is document defect D-3.

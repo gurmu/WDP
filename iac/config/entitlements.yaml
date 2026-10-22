@@ -1,0 +1,303 @@
+# =====================================================================
+# AWOZ-1227 -- the view-based entitlement model, as configuration
+# =====================================================================
+#
+# E1 Task 1.4. This file is the SINGLE source of the entitlement model.
+# Two things read it and nothing else defines it:
+#
+#   scripts/24_build_entitlement_model.py   applies it live, then verifies
+#   scripts/25_gen_databricks_tf.py         generates iac/databricks/*.tf
+#
+# Why it exists as config rather than as SQL in a script: AC6 requires
+# the configuration be redeployable from code (T-12), and a view whose
+# column list lives only inside a Python string cannot be diffed, nor
+# compared against the CONOPS by anything but a human reading both.
+#
+# WHAT THIS FILE REPLACES IN THE CONOPS
+# -------------------------------------
+# §3.1 ("Table, column and row scope"), §2.3.1 and §3.4 step 2 all say
+# sensitive columns are excluded by "sharing a view, OR applying column
+# masks and row filters". The second half is impossible. Measured, with
+# the error attached, in docs/11 §11.4:
+#
+#   INVALID_PARAMETER_VALUE.ROW_COLUMN_SECURITY_NOT_SUPPORTED_WITH_TABLE_IN_DELTA_SHARING
+#   Table ... is being shared with OpenSharing, and cannot use row/column security
+#
+# That is architectural and applies at every tier: a table in an
+# OpenSharing share cannot carry row/column security, and a table that
+# carries it cannot be added to such a share. The two features are
+# mutually exclusive by design. So this model is view-based ONLY, and
+# the clause should be struck from v1.6 with that error as the evidence.
+#
+# This file closes document defects D-1 and D-2.
+
+schema_version: 1
+
+conops:
+  document: AWOZ-1227 CONOPS
+  version: "1.5"
+  sections: ["3.1", "2.3.1", "3.4", "3.3"]
+  milestone: INC17 / AWOZ-1227
+  epic: 1227-E1 (T04-10)
+  task: "1.4"
+  closes_defects: [D-1, D-2]
+
+# ---------------------------------------------------------------------
+# The forbidden mechanism, recorded so it cannot be reintroduced by
+# somebody who reads §3.1 and not §11.4.
+# ---------------------------------------------------------------------
+forbidden_mechanisms:
+  - mechanism: column_mask
+    ddl: "ALTER TABLE ... ALTER COLUMN ... SET MASK"
+    status: REFUSED_BY_PLATFORM
+    scope: all_tiers_architectural
+    error_code: >-
+      INVALID_PARAMETER_VALUE.ROW_COLUMN_SECURITY_NOT_SUPPORTED_WITH_TABLE_IN_DELTA_SHARING
+    evidence: docs/11-environment-baseline.md §11.4
+  - mechanism: row_filter
+    ddl: "ALTER TABLE ... SET ROW FILTER ... ON (...)"
+    status: REFUSED_BY_PLATFORM
+    scope: all_tiers_architectural
+    error_code: >-
+      INVALID_PARAMETER_VALUE.ROW_COLUMN_SECURITY_NOT_SUPPORTED_WITH_TABLE_IN_DELTA_SHARING
+    evidence: docs/11-environment-baseline.md §11.4
+  - mechanism: select_star_except
+    ddl: "CREATE VIEW ... AS SELECT * EXCEPT (internal_notes) FROM ..."
+    status: FORBIDDEN_BY_THIS_PROJECT
+    scope: convention_enforced_in_code
+    refused_because: >-
+      Not refused by the platform -- refused here. A view defined by
+      subtraction fails OPEN: add a column to the base table tomorrow
+      and it flows into the view, into the share, and out to every
+      recipient, with no error anywhere and no diff in this file. A view
+      defined by an explicit select list fails CLOSED: the new column is
+      simply absent until somebody adds it here on purpose. The two
+      forms look equally correct in a code review and behave in opposite
+      directions the first time the base table changes.
+    enforced_by: scripts/24_build_entitlement_model.py, scripts/22_check_cac_config.py
+
+catalog: awoz1227_demo          # env override: UC_METASTORE_CATALOG
+schema: opensharing_test        # env override: UC_SCHEMA
+
+# ---------------------------------------------------------------------
+# Base tables. NEVER shared. The column list is here so the entitled
+# set can be compared against the real one, which is how a new base
+# column gets noticed instead of leaking.
+# ---------------------------------------------------------------------
+base_tables:
+  - name: test_dataset          # env override: UC_TABLE
+    never_shared: true
+    never_shared_because: >-
+      §11.5: the live share carried this table, and `internal_notes` is
+      a column on it, so a recipient with SELECT could read the very
+      column T-04 was written to prove was unreachable. T-04 proved
+      nothing because the column was inside the grant. The base table is
+      excluded from every share and a check asserts it across ALL
+      shares, not just the one this file creates.
+    synthetic: true
+    synthetic_because: >-
+      CONOPS §1.2: tests use a non-sensitive test dataset; records and
+      evidence hold names and metadata only.
+    produced_by: scripts/01_create_test_dataset.py
+    columns:
+      - {name: record_id,    type: BIGINT, entitled: true}
+      - {name: agency_name,  type: STRING, entitled: true}
+      - {name: use_case,     type: STRING, entitled: true}
+      - {name: region,       type: STRING, entitled: true}
+      - {name: record_date,  type: DATE,   entitled: true}
+      - {name: metric_value, type: DOUBLE, entitled: true}
+      - name: internal_notes
+        type: STRING
+        entitled: false
+        withheld_because: >-
+          Outside every grant in this prototype. It is the column T-04
+          requests. Withheld by ABSENCE from the view's select list, not
+          by a mask -- there is no mask to misconfigure and nothing to
+          fail open.
+
+# ---------------------------------------------------------------------
+# The views. One per purpose. Each carries its DSA reference and tier in
+# its COMMENT, because §3.3's purpose-limitation control is "the DSA
+# reference is carried on every recipient" and a view without one cannot
+# be audited back to the agreement that permitted it.
+# ---------------------------------------------------------------------
+views:
+  - id: v_entitled_t2
+    tier: T2
+    purpose: CDAO PSP7 egress demo -- column scope
+    dsa_ref: DSA-AWOZ-1227-PSP7-001
+    dsa_ref_status: PLACEHOLDER
+    dsa_ref_status_because: >-
+      No executed DSA exists for the prototype. The reference is
+      well-formed and carried end to end so the MECHANISM is proven; the
+      value is a placeholder and is labelled one everywhere it appears,
+      including in the view's COMMENT. E3 Task 3.2 replaces the value,
+      not the mechanism.
+    base_table: test_dataset
+    select:
+      - record_id
+      - agency_name
+      - use_case
+      - region
+      - record_date
+      - metric_value
+    excludes: [internal_notes]
+    where: null
+    row_scope: ALL_ROWS
+    shared: true
+
+  - id: v_entitled_t2_us
+    tier: T2
+    purpose: CDAO PSP7 egress demo -- column AND row scope
+    dsa_ref: DSA-AWOZ-1227-PSP7-002
+    dsa_ref_status: PLACEHOLDER
+    dsa_ref_status_because: As above.
+    base_table: test_dataset
+    select:
+      - record_id
+      - agency_name
+      - use_case
+      - region
+      - record_date
+      - metric_value
+    excludes: [internal_notes]
+    where: "region = 'us-east'"
+    row_scope: SINGLE_REGION
+    row_scope_note: >-
+      The view name follows the Task 1.4 example. The predicate is the
+      one the synthetic data can actually discriminate on: every row is
+      in some us-* region, so a `region LIKE 'us-%'` filter would select
+      everything and a row-scope test against it would pass while
+      filtering nothing. Row scope is therefore asserted by a MEASURED
+      row-count difference against v_entitled_t2, not by the presence of
+      a WHERE clause. The expected counts are not written here -- they
+      are counted at apply time, because a constant in this file would
+      be re-asserted rather than observed.
+    shared: true
+
+# ---------------------------------------------------------------------
+# Shares. One share per purpose (§3.1 share isolation), each carrying
+# views only.
+#
+# NOTE on §3.1 as written, per docs/11 §11.7 B-29: "one recipient per
+# consuming agency or use case" is unsatisfiable for *use case*, because
+# a recipient is keyed by the consuming metastore identifier and the
+# second CREATE RECIPIENT returns RECIPIENT_ALREADY_EXISTS naming the
+# first. Isolation is achieved as ONE RECIPIENT PER CONSUMING METASTORE
+# WITH SEVERAL SHARES GRANTED TO IT -- which is why the per-purpose
+# split lives here, on shares, and not on recipients. Recipients are
+# Task 1.5.
+# ---------------------------------------------------------------------
+shares:
+  - name: awoz1227-psp7-demo-share
+    exists_already: true
+    purpose: CDAO PSP7 egress demo -- column scope
+    objects: [v_entitled_t2]
+    remediation_required: true
+    remediation: >-
+      This is the share §11.5 found carrying the BASE TABLE. Task 1.4
+      removes `test_dataset` from it and adds `v_entitled_t2`. The name
+      is kept deliberately: renaming it would leave the misconfigured
+      share in place under the old name and create a correct one beside
+      it, and the recipient credential already issued points at this
+      name.
+    comment: >-
+      AWOZ-1227 demo share. Views only; the base table is never added.
+      Synthetic non-sensitive data (CONOPS 1.2).
+
+  - name: awoz1227-psp7-t2-us-share
+    exists_already: false
+    purpose: CDAO PSP7 egress demo -- column AND row scope
+    objects: [v_entitled_t2_us]
+    comment: >-
+      AWOZ-1227 row-scoped share. Views only. Exists to make §3.1 share
+      isolation observable: two purposes, two shares, one recipient.
+
+# ---------------------------------------------------------------------
+# Invariants. Each is checked by code; the "checked_by" field names what
+# does it, so an invariant with no checker is visible as a gap.
+# ---------------------------------------------------------------------
+invariants:
+  - id: EI-1
+    statement: >-
+      The base table appears in NO share on this metastore -- not only in
+      the shares this file defines.
+    because: >-
+      §11.5's defect was a share that nobody looked at. A check scoped to
+      the shares in this file would pass while a forgotten share from an
+      earlier probe still carried the table.
+    checked_by: scripts/24_build_entitlement_model.py (rule 1)
+    on_cannot_see: >-
+      If the share listing cannot be read, the result is CANNOT_SEE, not
+      PASS. A check that could not look must not report what a check
+      that looked and found nothing reports (§12.9).
+
+  - id: EI-2
+    statement: Every shared view's select list is explicit and contains no `*`.
+    because: See forbidden_mechanisms.select_star_except -- subtraction fails open.
+    checked_by: scripts/24 (rule 2), scripts/22 (static)
+
+  - id: EI-3
+    statement: >-
+      Every shared view's actual column set, read back from the platform,
+      equals its declared select list exactly.
+    because: >-
+      Reading back is the point. A view created from this file and then
+      replaced by hand would still be in the share; the DDL this repo
+      typed is not evidence of what the platform holds (B-23: the
+      re-read is the finding, not the 200).
+    checked_by: scripts/24 (rule 3)
+
+  - id: EI-4
+    statement: >-
+      Every shared view carries a COMMENT containing its tier and its
+      DSA reference, read back from the platform.
+    because: >-
+      §3.3 purpose limitation. A shared object that cannot be traced to
+      an agreement cannot be audited, and the COMMENT is the only field
+      that travels with the object.
+    checked_by: scripts/24 (rule 4)
+
+  - id: EI-5
+    statement: No withheld column appears in any view's select list.
+    because: The whole model. Checked statically so a bad edit fails before it is applied.
+    checked_by: scripts/22, scripts/24 (pre-apply guard)
+
+  - id: EI-6
+    statement: >-
+      Row scope is demonstrated by a measured row-count difference, not
+      by the presence of a WHERE clause.
+    because: >-
+      A WHERE clause that matches every row is indistinguishable from no
+      WHERE clause by reading the DDL, and identical in effect.
+    checked_by: scripts/24 (rule 5)
+
+# ---------------------------------------------------------------------
+# What this file does NOT establish, stated so the gap is not mistaken
+# for a pass.
+# ---------------------------------------------------------------------
+known_incomplete:
+  - id: EKI-1
+    scope: the recipient's view of the schema
+    statement: >-
+      Everything above is PROVIDER-side. It proves the share carries the
+      view and the view has no `internal_notes` column. It does NOT
+      prove what a recipient's Delta Sharing client receives when it
+      asks for table metadata through the issued credential.
+    consequence: >-
+      "A recipient sees no internal_notes column at all (absent, not
+      masked)" is Task 1.4's verify clause and is only half-answered
+      here.
+    closes_when: >-
+      Task 1.7 rebuilds T-04 to query the share through the credential
+      and assert the column is absent from the protocol response AND
+      that a direct request for the base table is refused.
+    owner: E1 Task 1.7 (T-04)
+
+  - id: EKI-2
+    scope: the DSA reference value
+    statement: >-
+      The mechanism is proven; the value is a placeholder, labelled as
+      one in the view COMMENT itself.
+    closes_when: E3 Task 3.2 supplies real DSA references.
+    owner: E3

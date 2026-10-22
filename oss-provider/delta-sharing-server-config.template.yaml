@@ -1,0 +1,70 @@
+# Delta Sharing reference server config -- TEMPLATE.
+#
+# scripts/10_setup_oss_provider.py renders this into
+#   _secrets/delta-sharing-server-config.yaml   (mode 0600, gitignored)
+# substituting the bearer-token placeholder below with OSS_PROVIDER_TOKEN
+# from .env. (This line deliberately does NOT spell the placeholder out:
+# a literal copy of it here got substituted too, writing the live token
+# into a comment in the rendered file.)
+#
+# The rendered file is a live credential and must never be tracked. This
+# template is tracked, because AC6 / T-12 requires the provider to be
+# rebuildable from code -- config in version control, secret injected at
+# render time.
+version: 1
+
+shares:
+  - name: "awoz_share"
+    schemas:
+      - name: "opensharing_test"
+        tables:
+          # s3a://, NOT file://. The server has no local-filesystem
+          # implementation: /query answers with PRE-SIGNED URLS, which a
+          # local path cannot have, so a file:// location fails with
+          # "File system class org.apache.hadoop.fs.LocalFileSystem is
+          # not supported" and reaches the client as a bare HTTP 500.
+          # Recorded as docs/11 B-8. Object storage is mandatory here and
+          # in the client environment alike.
+          #
+          # Substituted by scripts/10_setup_oss_provider.py from
+          # OSS_PROVIDER_BUCKET in .env, so the bucket name is
+          # configurable without editing a tracked file. The endpoint
+          # this s3a:// URI resolves against is NOT here -- it comes from
+          # oss-provider/core-site.xml, baked into the image.
+          # `id` IS MANDATORY, despite what validation suggests.
+          # TableConfig validates only two fields -- its error strings are
+          # "'name' in a table must be provided" and "'location' in a
+          # table must be provided" -- so a table with no id loads
+          # cleanly and the server starts. But the response builder
+          # (SharedTableManager.listAllTables, which /tables also calls)
+          # reads TableConfig.id() for every table and throws
+          # NullPointerException, surfacing as HTTP 500
+          # {"errorCode":"INTERNAL_ERROR","message":""} on /tables and
+          # /all-tables while /shares and /schemas keep working.
+          # See docs/11 B-11.
+          #
+          # The value is a UUIDv5 derived by
+          # scripts/10_setup_oss_provider.py from the share/schema/table
+          # names, so it is stable across redeploys without being stored
+          # anywhere -- which is what AC6 / T-12 needs, since a recipient
+          # that has cached the table id must still recognise the table
+          # after the provider is rebuilt from code.
+          - name: "test_dataset"
+            location: "__TABLE_LOCATION__"
+            id: "__TABLE_ID__"
+
+authorization:
+  bearerToken: "__BEARER_TOKEN__"
+
+# Container-internal. Published on the host as 8086 (8080 is occupied on
+# this machine, and 8082-8085 are Gravitee's).
+host: "0.0.0.0"
+port: 8080
+endpoint: "/delta-sharing"
+
+# Keep the response window small so pagination behaviour is observable
+# in T-20 rather than hidden by a page size larger than the test data.
+preSignedUrlTimeoutSeconds: 3600
+deltaTableCacheSize: 10
+stalenessAcceptable: false
+evaluatePredicateHints: false

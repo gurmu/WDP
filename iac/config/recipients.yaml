@@ -1,0 +1,692 @@
+# =====================================================================
+# AWOZ-1227 -- recipients, credentials and the sign-in branch, as config
+# =====================================================================
+#
+# E1 Task 1.5. This file is the SINGLE definition of the recipient side.
+# Two things read it and nothing else defines it:
+#
+#   scripts/27_build_recipient_model.py   applies it live, then verifies
+#   scripts/22_check_cac_config.py        checks it statically, pre-apply
+#
+# It is the companion to iac/config/entitlements.yaml: that file decides
+# WHAT is exposed, this one decides WHO can reach it and WITH WHAT
+# CREDENTIAL. Neither is complete without the other, and they are
+# separate files because the entitlement model is a Data Architecture
+# artefact and the sign-in model is a Data Governance one (OD-5). They
+# have different approvers, so they get different diffs.
+#
+# ---------------------------------------------------------------------
+# THIS FILE DOES NOT DECIDE OD-5
+# ---------------------------------------------------------------------
+# OD-5 ("recipient sign-in: bearer token with lifetime and rotation, or
+# OIDC federation") is OPEN and owned by Data Governance. docs/13 §13.2
+# records it as the critical-path decision: AC1's sign-in model IS OD-5,
+# and the §3.4.1 issuance pattern, T-10's overlap behaviour and R4's
+# residual-risk statement all read differently depending on the answer.
+#
+# What this prototype does, per §13.2, is build the BEARER-TOKEN branch
+# completely -- because that is the branch Free Edition supports and the
+# one every reference client in §2.3.4 actually sends -- while recording
+# exactly what would change under OIDC. That turns the decision into a
+# SUBSTITUTION rather than a redesign.
+#
+# So every number below under `token_policy` is labelled
+# PROTOTYPE_DEFAULT_NOT_POLICY. A default that is not labelled becomes a
+# decision by being found in a file, which is how a laptop convenience
+# ends up quoted back as an agreed control.
+
+schema_version: 1
+
+conops:
+  document: AWOZ-1227 CONOPS
+  version: "1.5"
+  sections: ["3.1", "3.1.1", "3.2", "3.2.1", "3.3", "3.4.1"]
+  milestone: INC17 / AWOZ-1227
+  epic: 1227-E1 (T04-10)
+  task: "1.5"
+  open_decision: OD-5
+  open_decision_status: OPEN_NOT_DECIDED_HERE
+  informs_defects: [D-3, D-7]
+  acceptance_criteria: [AC1, AC4]
+
+# ---------------------------------------------------------------------
+# The two branches of OD-5. One is built; the other is specified to the
+# point where substituting it is a known quantity.
+# ---------------------------------------------------------------------
+sign_in:
+  built_branch: BEARER_TOKEN
+  built_because: >-
+    Free Edition supports it, every §2.3.4 reference client sends it, and
+    §13.2 asks for one branch built completely rather than two sketched.
+
+  branches:
+    - id: BEARER_TOKEN
+      status: BUILT_AND_VERIFIED_HERE
+      authentication_type: TOKEN
+      credential: Delta Sharing credential file (profile_file v1, bearerToken)
+      consumer_types: [D2O -- any open Delta Sharing client]
+      what_this_file_configures: everything below
+
+    - id: OIDC_FEDERATION
+      status: NOT_BUILT_SPECIFIED_ONLY
+      not_built_because: >-
+        Not available to configure on this workspace, and building a
+        simulation of it would produce a test that exercises the
+        simulation. §12.9: a check that could not look must not report
+        what a check that looked would report.
+      what_changes_if_chosen:
+        - field: token_policy.lifetime_days
+          becomes: NOT_APPLICABLE
+          why: >-
+            Lifetime moves to the identity provider's token TTL, which is
+            minutes-to-hours rather than days-to-a-year. The whole
+            rotation schedule below collapses into IdP refresh and stops
+            being an AWOZ-1227 control at all.
+        - field: token_policy.rotation
+          becomes: NOT_APPLICABLE
+          why: Nothing to rotate; there is no long-lived bearer secret.
+        - field: token_policy.revocation_triggers
+          becomes: RETAINED_BUT_ENFORCED_ELSEWHERE
+          why: >-
+            The triggers stay valid as policy. The enforcement point moves
+            from `DELETE /recipients/{name}` to the IdP's group
+            membership, which means revocation becomes someone else's
+            API and R4's residual risk is re-pointed, not reduced.
+        - field: recipients[].ip_access_list
+          becomes: UNCHANGED
+          why: >-
+            Measured: the IP access list is a property of the RECIPIENT
+            object, not of the token (docs/11 §11.3, defect D-3). It
+            survives the branch change, which makes it the one §3.1
+            defense-in-depth control that is safe to build now.
+        - field: "§3.4.1 step 3 (provisioning retrieves the activation link)"
+          becomes: REMOVED
+          why: >-
+            There is no one-time activation link under federation, so the
+            six-step issuance pattern loses a step and T-10's overlap
+            question ("two tokens live at once") has no subject.
+      cost_of_substitution: >-
+        Everything in `recipients[]` below except `grants` and
+        `ip_access_list` is branch-specific. The grants and the IP lists
+        are not. So the substitution rewrites the credential half of this
+        file and leaves the authorisation half standing.
+
+# ---------------------------------------------------------------------
+# Platform facts the decision needs. SEPARATED BY HOW WE KNOW THEM,
+# because "the docs say" and "we watched it happen" are not the same
+# strength of claim and the ask in §13.2 should not blur them.
+# ---------------------------------------------------------------------
+platform_facts:
+  - fact: A recipient bearer token is valid for at most one year.
+    status: DOCUMENTED_NOT_MEASURED
+    checked_by: scripts/27 (rule 4 asserts the configured lifetime is inside it)
+    note: >-
+      Not measured and not measurable in a prototype -- the measurement
+      is a year long. Rule 4 therefore asserts our own number against
+      the documented bound rather than confirming the bound.
+  - fact: A recipient holds at most two tokens (one active, one rotated).
+    status: DOCUMENTED_NOT_MEASURED
+    checked_by: scripts/27 (rule 4 counts them)
+    conops_relevance: T-10 overlap behaviour; §3.4.1 rotation path.
+  - fact: >-
+      The activation link yields the credential file exactly once, and
+      rotating before first use replaces the link.
+    status: PARTIALLY_MEASURED
+    measured_part: >-
+      The link is retrievable by the provisioning process (docs/11 §11.3)
+      and was exchanged once for a credential file by scripts/03.
+    unmeasured_part: >-
+      That a SECOND exchange fails. Nobody tried, because trying costs
+      the credential if it succeeds.
+  - fact: >-
+      Creating a TOKEN recipient mints the activation link immediately,
+      as part of the create call.
+    status: MEASURED
+    consequence: >-
+      Recipient creation IS credential issuance for this branch. There is
+      no "create now, issue later" shape available, so scripts/27 cannot
+      gate issuance behind a flag the way it gates rotation. It writes
+      the record to _secrets/ with owner-only permissions and never
+      prints the link. See scripts/27's docstring.
+  - fact: >-
+      Recipient IP access lists are enforced and are not a paid-tier
+      feature.
+    status: MEASURED
+    evidence: docs/11 §11.3; defect D-3
+  - fact: >-
+      A recipient is keyed by its sharing identifier, so a second
+      DATABRICKS-type recipient for a metastore that already has one is
+      refused -- and the error names the OTHER recipient.
+    status: MEASURED
+    evidence: docs/11 §11.7 B-29
+    consequence: see share_isolation below
+
+# ---------------------------------------------------------------------
+# §3.1's isolation rule, which has TWO answers and reads as if it has
+# one. This is the defect this task contributes.
+# ---------------------------------------------------------------------
+share_isolation:
+  conops_text: >-
+    §3.1: "one recipient per consuming agency or use case".
+  finding: >-
+    The rule is satisfiable per USE CASE on the D2O channel and
+    unsatisfiable per use case on the D2D channel, because the uniqueness
+    key differs between authentication types. A DATABRICKS-type recipient
+    carries a sharing identifier (the consuming metastore) and that is
+    the key, so two use cases landing in one consuming metastore cannot
+    have two recipients (B-29). A TOKEN-type recipient has no sharing
+    identifier, so the key does not bind and per-use-case recipients are
+    available.
+  status: HALF_MEASURED
+  measured_half: >-
+    The D2D refusal is measured (B-29), with the error text recorded.
+  unmeasured_half: >-
+    That two TOKEN recipients for the same logical consumer coexist. This
+    file creates a second one, so scripts/27 rule 7 measures it as a side
+    effect of applying the config rather than as a separate probe.
+  consequence_for_v1_6: >-
+    §3.1 needs splitting by channel. As written it is a single sentence
+    that is true for D2O and false for D2D, which is the worst shape for
+    a control statement: whoever implements the D2D half will read it,
+    try it, and get an error naming an object they did not touch.
+  consequence_for_this_file: >-
+    The per-purpose split lives on BOTH shares and recipients for D2O
+    (two shares, two recipients) and on shares ALONE for D2D (one
+    recipient per metastore, several shares granted to it). Both shapes
+    are expressed below so the difference is visible in config rather
+    than only in prose.
+
+# ---------------------------------------------------------------------
+# The five OD-5 sub-decisions. Each carries a local default, the owner
+# who actually decides it, and what changes if they decide otherwise.
+# None of these is a decision. All of them are inputs to one.
+# ---------------------------------------------------------------------
+token_policy:
+  status: PROTOTYPE_DEFAULT_NOT_POLICY
+  decision_owner: Data Governance (OD-5)
+  escalate_as: >-
+    Five sub-decisions, each with a local default that works and a
+    consequence if changed. Presented as inputs, not as a recommendation,
+    except where the prototype measured something that narrows the
+    option set.
+
+  sub_decisions:
+    - id: OD5-1
+      question: Sign-in method.
+      local: BEARER_TOKEN
+      genuinely_open: true
+      prototype_narrows_it: >-
+        Not much. Both branches remain viable in the real programme; this
+        prototype can only build one and has specified the cost of
+        swapping (see sign_in.branches).
+
+    - id: OD5-2
+      question: Token lifetime.
+      local_days: 7
+      local_because: >-
+        Long enough that Task 1.7's consumer-side T-04 and B-32c's
+        propagation read do not expire mid-task; short enough that a
+        leaked prototype credential dies on its own. scripts/03 used 1
+        day and that was too short -- a credential that expires before
+        the test that needs it produces a failure indistinguishable from
+        the failure the test is looking for.
+      platform_max_days: 365
+      genuinely_open: true
+      consequence: >-
+        Lifetime and rotation cadence are one decision wearing two names.
+        A 7-day token with a 90-day rotation schedule is incoherent.
+
+    - id: OD5-3
+      question: Rotation schedule and overlap.
+      local: ROTATE_ON_DEMAND_WITH_OVERLAP
+      local_overlap_seconds: 86400
+      local_because: >-
+        The platform allows two tokens (one active, one rotated), so
+        overlap is bounded by the platform at two and by us at 24h. The
+        overlap exists so a consumer that has not yet picked up the new
+        credential is not cut off by the rotation itself.
+      genuinely_open: true
+      measured_by: T-10 (E3) -- whether the old token keeps working for the
+        full overlap window, and whether the new one works before the old
+        one dies.
+      not_measured_here: true
+
+    - id: OD5-4
+      question: Revocation triggers.
+      local:
+        - trigger: DSA expiry or termination
+          enforcement: DELETE recipient
+        - trigger: Credential suspected compromised
+          enforcement: rotate-token with existing_token_expire_in_seconds=0
+        - trigger: Consuming agency's point of contact changes
+          enforcement: review, no automatic action
+        - trigger: Purpose change not covered by the DSA
+          enforcement: revoke the SHARE grant, keep the recipient
+      genuinely_open: true
+      prototype_narrows_it: >-
+        The last one is a finding rather than a preference: revoking a
+        grant and deleting a recipient are different blast radii, and
+        §3.1's isolation shape decides which one a purpose change needs.
+        With one recipient per metastore (the D2D shape), deleting the
+        recipient to stop ONE purpose stops all of them.
+      checked_by: scripts/27 (rule 8 -- asserts each trigger names an
+        enforcement action that is an operation this API actually has)
+
+    - id: OD5-5
+      question: Who approves issuance.
+      local: THE_OPERATOR_IS_ALSO_THE_APPROVER
+      local_because: >-
+        A one-person prototype cannot model separation of duties. Stated
+        plainly because the alternative is an unlabelled implicit answer.
+      genuinely_open: true
+      consequence: >-
+        §3.4.1 step 3 says "a provisioning process, not the consumer,
+        retrieves the activation link". That is satisfied here by
+        scripts/27 being the provisioning process. It does NOT demonstrate
+        an approval gate, and no local evidence can.
+
+# ---------------------------------------------------------------------
+# The recipients. Names of existing objects are KEPT, not improved:
+# renaming leaves the old object in place beside a correct one, and an
+# already-issued credential points at the old name.
+# ---------------------------------------------------------------------
+recipients:
+  - name: psp7-demo-recipient
+    exists_already: true
+    authentication_type: TOKEN
+    channel: D2O
+    purpose: CDAO PSP7 egress demo -- column scope
+    dsa_ref: DSA-AWOZ-1227-PSP7-001
+    dsa_ref_status: PLACEHOLDER
+    dsa_ref_carried_in: comment
+    dsa_ref_carried_because: >-
+      §3.3's purpose-limitation control is "the DSA reference is carried
+      on every recipient". The comment is the only field that travels
+      with the object and is readable without a separate call.
+    grants:
+      - share: awoz1227-psp7-demo-share
+        privileges: [SELECT]
+    ip_access_list:
+      mode: NOT_APPLIED_BY_DESIGN
+      not_applied_because: >-
+        THIS IS NOT AN OVERSIGHT AND MUST NOT BE "FIXED". This is the
+        recipient Task 1.7 reads through to rebuild T-04. An IP access
+        list on it would deny the read, and an allow-list denial and an
+        entitlement denial are the same observation from the client's
+        side. T-04 would then pass for the wrong reason: the column would
+        be unreachable because the NETWORK refused, not because the
+        column is outside the grant. That is §12.9's silent negative with
+        the sign flipped -- a test passing without touching the
+        mechanism it names.
+      defense_in_depth_tested_on: awoz1227-t02-iplist-recipient
+    used_by: [E1 Task 1.7 (T-04 rebuild), B-32c propagation read]
+    measured_state:
+      observed: NO_TOKEN
+      token_count: 0
+      observed_when: first run of scripts/27 (2026-10-21)
+      observed_before_any_mutation: true
+      observed_before_any_mutation_because: >-
+        The --dry-run pass reported NO_TOKEN with tokens=0 BEFORE the
+        apply pass touched anything, which is what establishes that the
+        applier did not cause this. Without that before-picture, "the
+        PATCH wiped the token" and "there was never a token" would be
+        indistinguishable from the after-picture alone.
+      probable_cause: >-
+        scripts/03 created this recipient with a ONE-DAY lifetime (its
+        own docstring says so). The window lapsed days ago. Whether the
+        token expired and was purged or the record was removed another
+        way is not determinable from the current state, and is not
+        asserted.
+      consequence: >-
+        The recipient Task 1.7 must read through has no credential.
+        T-04's rebuild cannot start until one is minted, and a read
+        attempted before minting would fail for a credential reason
+        while looking exactly like the entitlement refusal T-04 is
+        looking for.
+      remedy: >-
+        SUPERSEDED -- CARRIED FORWARD, NOT ERASED (B-19). The remedy was
+        applied on 2026-10-21: `scripts/27_build_recipient_model.py
+        --rotate-token psp7-demo-recipient` returned ROTATED and a live
+        one-time link now exists. The text is kept because the reasoning
+        for why the plain apply path does NOT mint a credential still
+        stands: minting is not a side effect an idempotent config run
+        should have.
+      remedy_applied:
+        when: 2026-10-21T08:59Z
+        by: scripts/27_build_recipient_model.py --rotate-token psp7-demo-recipient
+        result: ROTATED
+        token_count_after: 1
+        lifetime_declared_days: 7
+        lifetime_observed_expiry: 2026-10-22T08:59:42Z
+        lifetime_discrepancy_is: >-
+          §11.7 B-34a. The rotate endpoint takes no lifetime argument, so
+          the new token INHERITED this recipient's birth lifetime of one
+          day rather than the 7 days this configuration declares. The
+          applier reports ROTATED either way, so the discrepancy is not
+          visible in its verdict. Lifetime is a birth property; rotation
+          does not reset it. OD-5 gains a third sub-question: which
+          operation is permitted to change a credential's lifetime.
+        consequence: >-
+          The link must be exchanged before 2026-10-22T08:59:42Z or
+          rotated again. Task 1.7 is NOT blocked by this, because T-04's
+          16-row discriminator lives in awoz1227-psp7-t2-us-share, whose
+          recipient already holds an activated credential valid to
+          2026-10-28.
+        link_state: >-
+          Exchangeable but NOT consumed as of the last run of scripts/28
+          (verdict LINK_PARSES_INFO_OK_NOT_CONSUMED, info 200). The
+          non-consuming guard ran; the consuming call did not. See B-36.
+
+  - name: awoz1227-psp7-t2-us-recipient
+    exists_already: false
+    authentication_type: TOKEN
+    channel: D2O
+    purpose: CDAO PSP7 egress demo -- column AND row scope
+    dsa_ref: DSA-AWOZ-1227-PSP7-002
+    dsa_ref_status: PLACEHOLDER
+    dsa_ref_carried_in: comment
+    grants:
+      - share: awoz1227-psp7-t2-us-share
+        privileges: [SELECT]
+    ip_access_list:
+      mode: NOT_APPLIED_BY_DESIGN
+      not_applied_because: >-
+        Same reason as above: this recipient exists so row scope can be
+        read from the consumer side (16 rows, not 50). A network denial
+        would make 16 and 50 equally unobservable.
+    exists_to_measure: >-
+      Whether two TOKEN recipients coexist for one logical consumer. If
+      the create succeeds, §3.1's per-use-case isolation is available on
+      D2O and share_isolation's unmeasured half closes. If it is refused,
+      the refusal text is the finding and B-29 generalises further than
+      it currently claims.
+    used_by: [E1 Task 1.6 (T-01), E1 Task 1.7 (row scope half)]
+
+  - name: awoz1227-t02-iplist-recipient
+    exists_already: false
+    authentication_type: TOKEN
+    channel: D2O
+    purpose: >-
+      §3.1 defense in depth -- the recipient that exists to be DENIED.
+    dsa_ref: DSA-AWOZ-1227-PSP7-001
+    dsa_ref_status: PLACEHOLDER
+    dsa_ref_carried_in: comment
+    grants:
+      - share: awoz1227-psp7-demo-share
+        privileges: [SELECT]
+        granted_because: >-
+          The grant is deliberate and is the point. An IP denial against
+          a recipient with NO grant proves nothing -- the read would fail
+          either way. The grant has to be real so that the allow-list is
+          the only thing standing between the credential and the data.
+          The share carries views over synthetic non-sensitive data
+          (§1.2), and the allow-list below admits no routable address, so
+          the exposure this grant creates is nil by two independent
+          mechanisms.
+    ip_access_list:
+      mode: APPLIED
+      allowed_ip_addresses: ["203.0.113.5/32"]
+      allowed_because: >-
+        203.0.113.0/24 is TEST-NET-3 (RFC 5737), reserved for
+        documentation and not routable. It is chosen so the list can
+        never accidentally contain the operator's own egress address,
+        which would silently turn the deny test into an allow test.
+    t02_procedure:
+      owner: E1 Task 1.6
+      status: SPECIFIED_NOT_RUN
+      why_two_phases: >-
+        A single observation cannot establish that an IP access list
+        works. "Read denied while the list excludes me" is also what a
+        broken credential, an unactivated token, a missing grant and a
+        typo'd share name look like. The denial is only attributable if
+        the SAME credential, grant and share produce a SUCCESSFUL read
+        when the list includes the operator's address.
+      phase_1:
+        action: >-
+          Add the operator's current egress address to the allow-list,
+          then read the share through the credential.
+        expect: SUCCESS
+        establishes: credential, grant, share and client are all working.
+      phase_2:
+        action: >-
+          Narrow the list back to 203.0.113.5/32 only, then repeat the
+          identical read.
+        expect: DENIED
+        establishes: >-
+          The ONLY changed variable is the allow-list, so the denial is
+          attributable to it. This is the observation T-02 and T-03 need
+          and neither currently has.
+      operator_ip_handling: >-
+        Captured at test time, written to the evidence file as a
+        /32-redacted form, and never committed to this config. An egress
+        address in a repo is a standing disclosure about where the
+        operator is.
+
+# ---------------------------------------------------------------------
+# What this file deliberately does NOT manage, so that two writers never
+# edit one object's state. B-31's lesson in the other direction: the
+# forgotten probe object was found by looking WIDER than the config, and
+# fixed by NOT adopting it.
+# ---------------------------------------------------------------------
+unmanaged_recipients:
+  policy: INVENTORY_AND_REPORT_NEVER_DELETE
+  policy_because: >-
+    B-19: a leftover is labelled, not erased. And a probe recipient still
+    serving a probe that is expected to re-run (scripts/19) must not be
+    removed by a config applier that does not know what needs it.
+  known_leftovers:
+    - name: awoz1227_demo_recipientashu
+      origin: UNKNOWN_NOT_PRODUCED_BY_ANY_SCRIPT_IN_THIS_REPO
+      origin_basis: >-
+        No script in scripts/ contains this name. It was created by hand
+        -- most likely through the workspace UI during an early session
+        -- which means the repository cannot account for it. Recorded
+        with that provenance rather than with a guessed one: "created by
+        some earlier step" and "no code in this repo creates this" are
+        different statements and only the second is true.
+      last_measured_state: NO_TOKEN
+      last_measured_reachability: DORMANT_NO_LIVE_CREDENTIAL
+      authentication_type: TOKEN
+      evidence: evidence/recipient-model.json (rule 6)
+      found_by: >-
+        Rule 6's inventory, on the first run of scripts/27. Nothing was
+        looking for it before Task 1.5 existed: it holds no share this
+        config names, so no earlier check's search space included it.
+      note: >-
+        Kept, not deleted (policy above). Whether it holds a grant on any
+        share is answered by rule 3's unmanaged-principal pass, which was
+        added after this run -- the first version of rule 3 filtered
+        unmanaged principals out and therefore could not have said
+        (docs/11 §11.7 B-33).
+
+    - name: awoz1227_p18_primary_recipient
+      origin: scripts/18_probe_d2d_direction_symmetry.py
+      last_measured_state: NO_TOKEN
+      last_measured_reachability: DORMANT_NO_LIVE_CREDENTIAL
+      evidence: evidence/base-table-exposure.json
+      note: >-
+        This is the recipient the 22.3-hour base-table exposure was
+        granted to (B-31). It is dormant, it is kept because scripts/19
+        reuses the pair by name, and rule 6 re-measures it every run
+        rather than trusting this line.
+  checked_by: scripts/27 (rule 6)
+
+# ---------------------------------------------------------------------
+# Invariants. Each names its checker so an unchecked one is visible.
+# ---------------------------------------------------------------------
+invariants:
+  - id: RI-1
+    statement: >-
+      Every recipient in this file exists on the metastore with the
+      declared authentication_type.
+    because: >-
+      The authentication type is the branch. A recipient silently created
+      as DATABRICKS when this file says TOKEN would make every
+      credential-path conclusion below belong to the other channel.
+    checked_by: scripts/27 (rule 1)
+
+  - id: RI-2
+    statement: >-
+      The IP access list read back from the platform equals the declared
+      one exactly -- and a recipient declared NOT_APPLIED_BY_DESIGN has
+      no list at all.
+    because: >-
+      Both directions are failures. A missing list where one is declared
+      is a perimeter that is not there; a PRESENT list where none is
+      declared is a denial waiting to be misread as a successful
+      entitlement test (see psp7-demo-recipient).
+    checked_by: scripts/27 (rule 2)
+
+  - id: RI-3
+    statement: >-
+      Each recipient holds EXACTLY the share grants declared here; the
+      check enumerates every share on the metastore rather than only the
+      declared ones, AND every principal holding a grant rather than only
+      the declared ones.
+    because: >-
+      B-31 for the share axis: a grant on a share this file has never
+      heard of is invisible to any check scoped to this file, and that is
+      the shape of the defect that cost 22.3 hours of base-table
+      exposure. B-33 for the principal axis: the first version of this
+      check widened the share search and left the principal search
+      scoped to the config, so a recipient this file does not manage
+      holding SELECT on a share it does manage was filtered out by a
+      rule whose stated job is "grants are exactly as declared". Half a
+      widening reads as a whole one.
+    checked_by: scripts/27 (rule 3)
+    on_extra_grant: >-
+      Reported as EXTRA_GRANT with the share named and the recipient's
+      reachability measured. Not removed unless --prune-grants is passed,
+      because an unexpected grant may be another task's working state.
+
+  - id: RI-4
+    statement: >-
+      No recipient holds more than two tokens, and no configured lifetime
+      exceeds the documented one-year bound.
+    because: platform_facts, items 1 and 2. T-10's subject.
+    checked_by: scripts/27 (rule 4)
+
+  - id: RI-5
+    statement: >-
+      Every recipient carries its DSA reference, read back from the
+      platform, with the placeholder status visible in the same string.
+    because: >-
+      §3.3 purpose limitation. And a placeholder that does not say it is
+      one gets quoted as an executed agreement reference.
+    checked_by: scripts/27 (rule 5)
+
+  - id: RI-6
+    statement: >-
+      Recipients on the metastore that this file does not manage are
+      enumerated with their reachability, every run.
+    because: >-
+      The inventory is the control. A dormant recipient is not a finding;
+      a dormant recipient nobody is counting is how it becomes one.
+    checked_by: scripts/27 (rule 6)
+    on_cannot_see: >-
+      CANNOT_SEE, never PASS. An unreadable recipient list is not an
+      empty one.
+
+  - id: RI-7
+    statement: >-
+      The activation URL is never written to stdout, to the evidence
+      file, or to any file outside _secrets/ with permissions other than
+      owner-only.
+    because: >-
+      Whoever holds the link holds the credential, once. stdout reaches
+      terminal scrollback, screen shares, CI logs and chat transcripts.
+    checked_by: scripts/27 (redaction at the call boundary) and
+      scripts/check_secret_hygiene.py (pre-commit)
+
+# ---------------------------------------------------------------------
+# What this file does NOT establish.
+# ---------------------------------------------------------------------
+known_incomplete:
+  - id: RKI-1
+    scope: the consumer's read
+    statement: >-
+      Everything scripts/27 checks is provider-side, exactly as Task 1.4
+      was. It proves a recipient exists, carries a grant, carries a DSA
+      reference and has the declared perimeter. It does NOT prove that a
+      Delta Sharing client holding the issued credential sees the
+      entitled columns and rows and nothing else.
+    closes_when: >-
+      Task 1.7 reads through the credential and asserts the absent column
+      and the 16-row scope from the client side.
+    owner: E1 Task 1.7 (T-04)
+
+  - id: RKI-2
+    scope: rotation and overlap
+    statement: >-
+      OD5-3's overlap window is configured and unexercised. No token has
+      been rotated, so "the old credential keeps working for 24h" is a
+      setting, not an observation.
+    closes_when: T-10 runs.
+    owner: E3
+
+  - id: RKI-3
+    scope: the IP access list's enforcement
+    statement: >-
+      §11.3 measured that an IP access list can be SET and is echoed
+      back. That is a configuration read, not an enforcement test. No
+      request has ever been denied by one here.
+    closes_when: >-
+      The two-phase t02_procedure above runs, producing both the allowed
+      read and the denied read.
+    owner: E1 Task 1.6 (T-02, T-03)
+
+  - id: RKI-5
+    scope: the credential Task 1.7 needs
+    statement: >-
+      Two of the three recipients hold a token in ACTIVATION_PENDING --
+      the link exists and has not been exchanged, so no client can read
+      yet. The third, psp7-demo-recipient, holds no token at all. No
+      credential in this model is live.
+    consequence: >-
+      "A recipient holds a grant" and "a recipient can read" are
+      different claims and only the first is currently true. Every
+      provider-side verdict in evidence/recipient-model.json is
+      compatible with nobody being able to read anything, which is
+      exactly what RKI-1 means and why the verdict says PROVIDER_SIDE.
+    closes_when: >-
+      The activation links in _secrets/ are exchanged for credential
+      files, and psp7-demo-recipient is rotated to mint one.
+    owner: E1 Task 1.6 / 1.7
+
+  - id: RKI-6
+    scope: the perimeter's topology, as distinct from its mechanism
+    statement: >-
+      T-02's production shape is an allow-list holding the GATEWAY's
+      egress address, so that a direct call from anywhere else is
+      refused. On this machine the gateway runs beside the test client
+      and both leave through the same NAT address, so an IP allow-list
+      cannot tell "via the gateway" from "direct" here. The MECHANISM is
+      testable -- admit, then refuse, the same read -- and the TOPOLOGY
+      is not, at any number of phases.
+    consequence: >-
+      AC1's direct-call refusal rests on an infrastructure assumption the
+      CONOPS never states: that the gateway egresses from an address the
+      recipient allow-list can name, and that no consumer can reach the
+      sharing endpoint from an address on it. On a single-host deployment
+      that assumption is false, and a T-02 reporting a pass without
+      separating the two halves would carry it silently into v1.6.
+    measured_by: >-
+      tests/t02_ip_access_list.py phase 1b -- with the list holding only
+      the operator's address, a successful read THROUGH the gateway shows
+      the two addresses are the same one.
+    closes_when: >-
+      NEVER_LOCALLY for the topology half. It closes in a deployment
+      where the gateway's egress address differs from any consumer's, at
+      which point T-02 should be rebuilt around the gateway's address
+      rather than the operator's. The deliverable here is the CONOPS
+      sentence, not the test.
+    owner: E1 Task 1.6 (the finding); Platform Security (the assumption)
+
+  - id: RKI-4
+    scope: the approval gate
+    statement: >-
+      OD5-5 is answered "the operator is also the approver", which is an
+      honest description of a one-person prototype and not a
+      demonstration of §3.4.1's provisioning separation.
+    closes_when: NEVER_LOCALLY
+    owner: Data Governance

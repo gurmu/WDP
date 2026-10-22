@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "T-03",
+    "description": "a valid token from a non-allow-listed address is refused at the edge",
+    "expected": "403 from the gateway's own ip-filtering policy, with the same path returning 200 immediately before and immediately after -- the same-path positive control B-40 requires, in both directions",
+    "actual": "REFUSED_AT_THE_EDGE_AND_REVERSIBLE",
+    "passed": true,
+    "date": "2026-10-22T07:39:14.262780Z",
+    "evidence_ref": "evidence/t03-refusal.json"
+  }
+]

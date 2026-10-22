@@ -1,0 +1,128 @@
+{
+  "probe": "M2 MCP methods",
+  "open_decision": "OD-8 (second half)",
+  "route": "M2",
+  "conops_ref": "\u00a72.3.2 row M2",
+  "at": "2026-10-22T07:18:03.548106+00:00",
+  "closes": "route-table.yaml M2 `methods_unconfirmed: true`. The method is POST, and a POST-only selector drops nothing, because this tier offers no GET event stream to drop.",
+  "probes": {
+    "legacy_m3_path": {
+      "method": "GET",
+      "path": "/api/2.0/mcp/servers",
+      "accept": null,
+      "at": "2026-10-22T07:18:02.573692+00:00",
+      "status": 404,
+      "content_type": "application/json",
+      "location": null,
+      "body": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'GET /mcp/servers'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"d278512c-e3b2-4a50-afa4-6a3e644623ec\",\"serving_data\":\"\"}]}",
+      "error_code": "ENDPOINT_NOT_FOUND"
+    },
+    "m2_base_get": {
+      "method": "GET",
+      "path": "/ai-gateway/mcp-services",
+      "accept": "application/json, text/event-stream",
+      "at": "2026-10-22T07:18:02.711990+00:00",
+      "status": 307,
+      "content_type": null,
+      "location": "mcp-services/",
+      "body": ""
+    },
+    "malformed_name": {
+      "method": "POST",
+      "path": "/ai-gateway/mcp-services/system",
+      "accept": "application/json, text/event-stream",
+      "at": "2026-10-22T07:18:02.842348+00:00",
+      "status": 200,
+      "content_type": "application/json",
+      "mcp_session_id_returned": false,
+      "location": null,
+      "body": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32603,\"message\":\"INVALID_PARAMETER_VALUE: name must be of the form `mcp-services/{catalog}.{schema}.{leaf}`\",\"data\":null}}",
+      "jsonrpc": true,
+      "jsonrpc_error_code": -32603,
+      "jsonrpc_error_message": "INVALID_PARAMETER_VALUE: name must be of the form `mcp-services/{catalog}.{schema}.{leaf}`",
+      "jsonrpc_result_present": false
+    },
+    "well_formed_get_sse": {
+      "method": "GET",
+      "path": "/ai-gateway/mcp-services/awoz1227_demo.opensharing_test.test_dataset",
+      "accept": "application/json, text/event-stream",
+      "at": "2026-10-22T07:18:02.980529+00:00",
+      "status": 405,
+      "content_type": "text/plain; charset=utf-8",
+      "location": null,
+      "body": "405 Method Not Allowed"
+    },
+    "well_formed_get_nosse": {
+      "method": "GET",
+      "path": "/ai-gateway/mcp-services/awoz1227_demo.opensharing_test.test_dataset",
+      "accept": "application/json",
+      "at": "2026-10-22T07:18:03.116576+00:00",
+      "status": 405,
+      "content_type": "text/plain; charset=utf-8",
+      "location": null,
+      "body": "405 Method Not Allowed"
+    },
+    "well_formed_post": {
+      "method": "POST",
+      "path": "/ai-gateway/mcp-services/awoz1227_demo.opensharing_test.test_dataset",
+      "accept": "application/json, text/event-stream",
+      "at": "2026-10-22T07:18:03.246276+00:00",
+      "status": 403,
+      "content_type": "application/json",
+      "location": null,
+      "body": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32007,\"message\":\"Not authorized to invoke MCP service.\",\"data\":null}}",
+      "jsonrpc": true,
+      "jsonrpc_error_code": -32007,
+      "jsonrpc_error_message": "Not authorized to invoke MCP service.",
+      "jsonrpc_result_present": false
+    },
+    "m2_base_post": {
+      "method": "POST",
+      "path": "/ai-gateway/mcp-services",
+      "accept": "application/json, text/event-stream",
+      "at": "2026-10-22T07:18:03.421167+00:00",
+      "status": 307,
+      "content_type": null,
+      "location": "mcp-services/",
+      "body": ""
+    }
+  },
+  "verdict": "POST_ONLY_CONFIRMED_NO_EVENT_STREAM_ON_THIS_TIER",
+  "findings": {
+    "mcp_surface_exists": {
+      "answer": true,
+      "evidence": "POST /ai-gateway/mcp-services/<name> -> HTTP 403 and 200, both carrying a JSON-RPC envelope. An MCP dispatcher answered. Note the malformed-name probe returns HTTP 200 while its JSON-RPC body is an ERROR -- reading the status alone would score it a success, so any gateway health check on this route that asserts on status code will report a broken MCP service as healthy. That is worth a line in v1.6 on its own.",
+      "base_path_is_not_the_probe": "GET /ai-gateway/mcp-services (no name, redirects NOT followed) -> 307. An earlier ad-hoc probe of this same URL reported 200 with a JSON-RPC body, and the difference was urllib following the 307 by default -- so the 200 belonged to a DIFFERENT URL than the one named in the result. Recorded because it is this repository's recurring defect in miniature: the measurement was real, the label was wrong, and nothing in the output said so.",
+      "contrast_with_m3": "The legacy path /api/2.0/mcp/servers returns 404 ENDPOINT_NOT_FOUND -- a different path with a different answer. M3's 404 was never evidence about M2."
+    },
+    "path_shape_correction": {
+      "conops_says": "/ai-gateway/mcp-services/{mcp-name}",
+      "server_requires": "INVALID_PARAMETER_VALUE: name must be of the form `mcp-services/{catalog}.{schema}.{leaf}`",
+      "why_it_matters": "The segment is a three-part Unity Catalog name, not an opaque service slug. So M2's authorization scope is per-UC-OBJECT. Two consequences for v1.6: the route table's description of this path is wrong and should be corrected; and a gateway selector over this path is selecting over UC object names, which means the allow-list question for M2 is 'which catalog.schema.leaf may be invoked', not 'which service'. Those are different allow-lists with different owners.",
+      "base_path_307": "POST /ai-gateway/mcp-services with no name -> 307. A reader probing the base path first sees a redirect and may conclude the route needs redirect handling. It does not; it needs a name."
+    },
+    "methods": {
+      "post": {
+        "status": 403,
+        "reached_dispatcher": true,
+        "jsonrpc_error_code": -32007,
+        "jsonrpc_error_message": "Not authorized to invoke MCP service.",
+        "reading": "POST routes. The -32007 'Not authorized to invoke MCP service' is the dispatcher refusing on AUTHORIZATION after authenticating and routing -- which is what confirms the path and verb. It is NOT M2 being unreachable."
+      },
+      "get_with_sse_accept": {
+        "status": 405,
+        "content_type": "text/plain; charset=utf-8"
+      },
+      "get_without_sse_accept": {
+        "status": 405,
+        "content_type": "text/plain; charset=utf-8"
+      },
+      "conclusion": "POST only. GET returns 405 on a well-formed name BOTH with and without text/event-stream in Accept, so the 405 is not content negotiation -- there is no GET event stream on this tier. route-table.yaml's `methods: [POST]` is correct and `methods_unconfirmed` can be cleared."
+    }
+  },
+  "what_this_does_not_prove": {
+    "invocation": "No MCP tool was invoked. The dispatcher refused on authorization (-32007) because no MCP service is registered and entitled to this principal on this tier. So M2's END TO END behaviour -- a governed tool call through Gravitee to a Unity Gateway MCP service -- remains unexercised. What is settled is the route's method and path shape, which is what the selector needs and what OD-8's second half asked.",
+    "the_stream_in_general": "'No GET stream on this tier' is not 'no GET stream'. A workspace with a registered MCP service may well offer one, and the MCP streamable-HTTP spec permits it. So the selector for a PRODUCTION M2 should still be reviewed against the tier it will run on. What this run removes is the need to GUESS: the question now has a method, and the method is 'probe GET on a well-formed name twice'.",
+    "tool_restriction": "M2 carries `tool_restriction: read-only tools only`. Nothing here tests that. It cannot be tested without an invocable service, and it is not a method question."
+  }
+}

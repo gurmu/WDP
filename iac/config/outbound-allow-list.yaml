@@ -1,0 +1,102 @@
+# GENERATED FILE -- DO NOT HAND-EDIT.
+#
+# Produced by scripts/23_gen_outbound_allow_list.py, which is the
+# SINGLE writer of this file. It merges the contributions of two
+# tests and labels each entry with how it was obtained.
+#
+# CONOPS 2.4.3 is the reason the provenance field exists:
+# "Databricks documentation does not publish the firewall
+# requirements for the recipient side, so test T-20 records the
+# hosts actually contacted and the allow-list is built from that
+# capture, not from assumption." An entry that was never watched
+# being used is therefore a weaker fact than one that was, and the
+# file has to be able to say which is which.
+#
+# NOT TRANSFERABLE AS WRITTEN. These hostnames and ports belong to
+# the local prototype. What transfers to a client environment is
+# the PROCEDURE that produced them -- run the recipient read with a
+# socket capture in place and generate this file from the result.
+# Copying these entries would permit hosts that do not exist there
+# and omit the ones that do.
+#
+# Generated: 2026-10-20T08:22:03.574380+00:00
+
+channel: I-1
+direction: outbound
+rule: pull only -- the platform opens every connection (CONOPS 2.4.3)
+default: deny
+non_transferable: true
+
+provenance_classes:
+  SOCKET_CAPTURE: >-
+    Observed being contacted during the read, under a filter that
+    showed this set to be both necessary and sufficient: the read
+    succeeds with exactly this set permitted, and removing the
+    storage host breaks the data read while leaving discovery
+    intact. Both halves matter -- discovery surviving is what
+    attributes the data failure to the storage host rather than to
+    a broken read.
+  DECLARED_NOT_CAPTURED: >-
+    Named in an issued credential and read through successfully, but
+    not socket-captured. Required, not proven sufficient.
+
+sufficiency:
+  socket_captured_set: NECESSARY_AND_SUFFICIENT
+  declared_set: NOT_ESTABLISHED
+  enforcement_caveat: >-
+    T-20's filter is in-process. It proves the read DEPENDS on the
+    captured hosts; it does not prove a firewall would enforce the
+    list.
+
+hosts:
+  - host: localhost
+    port: 8086
+    role: provider_endpoint
+    provenance: SOCKET_CAPTURE
+    conops_ref: "CONOPS 2.4.3 approved provider endpoint"
+    source_test: T-20
+    source_evidence: evidence/t20-ingress-d2o.json
+    observed_resolutions: 2
+    stages: [discovery, data]
+  - host: objectstore
+    port: 8000
+    role: presigned_url_storage_host
+    provenance: SOCKET_CAPTURE
+    conops_ref: "CONOPS 2.4.3 storage hosts serving pre-signed file URLs"
+    source_test: T-20
+    source_evidence: evidence/t20-ingress-d2o.json
+    observed_resolutions: 1
+    stages: [data]
+  - host: b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com
+    port: 443
+    port_derivation: "from the credential endpoint scheme ('https')"
+    role: databricks_open_sharing_endpoint
+    provenance: DECLARED_NOT_CAPTURED
+    conops_ref: "CONOPS 2.4.3 approved provider endpoint"
+    source_test: T-19
+    source_evidence: evidence/t19-ingress-d2d.json
+    read_demonstrated: READ_ATTRIBUTABLE_TO_GLOVASHU
+    caveat: >-
+      Named in the credential the platform was issued and read through
+      successfully, but NO socket capture was taken on this path. This
+      entry says the host is required; it does NOT say the set is
+      sufficient. See known_incomplete.
+
+# What this file does NOT cover, stated so the gap is not mistaken
+# for a complete list. A missing entry and a host that is genuinely
+# not contacted produce the same empty line here.
+known_incomplete:
+  - id: KI-1
+    scope: Databricks-hosted provider data plane
+    statement: >-
+      The DECLARED_NOT_CAPTURED entry is the sharing CONTROL plane
+      only. A Databricks provider vends pre-signed URLs for the
+      data plane, so that path also contacts storage hosts which
+      are NOT in this file because no capture was taken on it.
+    consequence: >-
+      A firewall built from this file alone would permit discovery
+      against the Databricks provider and break the read. The
+      failure would look like a permissions problem.
+    closes_when: >-
+      The same socket-capture procedure T-20 used is run against
+      the Databricks-hosted provider path.

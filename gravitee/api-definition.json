@@ -1,0 +1,147 @@
+{
+  "_comment": "AWOZ-1227 demo API definition for Gravitee APIM v4.12.23 (confirmed against this exact installation's /management/v2/.../plugins/policies schema endpoints -- field names below are verified, not guessed). Import via scripts/05_import_gravitee_api.py. Replace <DATABRICKS_HOST> and <STORAGE_HOST> placeholders before import; the import script does this for you from .env. NOTE: this version's Management REST API uses the /management/v2/organizations/{org}/environments/{env}/apis base path for V4 API definitions (POST /apis to create with embedded listeners/endpointGroups/flows), NOT the /management/organizations/.../apis/_import endpoint used by older APIM versions -- that older path only understands the legacy V2 gateway definition shape and will 500/404 against this definition. Plans are NOT embedded in the API creation call in this version; they are created via a separate POST .../apis/{id}/plans call and then published via POST .../plans/{planId}/_publish, both of which scripts/05 does for you.",
+  "api": {
+    "name": "AWOZ-1227 OpenSharing Perimeter",
+    "apiVersion": "1.4.0-demo",
+    "definitionVersion": "V4",
+    "description": "Gravitee micro-perimeter in front of the Databricks OpenSharing (Delta Sharing) endpoint. Implements CONOPS AWOZ-1227 Section 3.1 (AC2) and the egress flow in Section 2.1.",
+    "type": "PROXY",
+    "listeners": [
+      {
+        "type": "HTTP",
+        "paths": [{ "path": "/delta-sharing" }],
+        "entrypoints": [{ "type": "http-proxy" }]
+      }
+    ],
+    "endpointGroups": [
+      {
+        "name": "databricks-sharing-endpoint",
+        "type": "http-proxy",
+        "endpoints": [
+          {
+            "name": "databricks",
+            "type": "http-proxy",
+            "configuration": {
+              "target": "https://<DATABRICKS_HOST>/api/2.0/delta-sharing"
+            },
+            "_comment": "Step 3 (internal proxying) in CONOPS Section 2.1. Databricks still validates the bearer token itself -- the gateway does NOT authenticate against Databricks, it only decides whether to forward the call."
+          }
+        ]
+      }
+    ],
+    "flows": [
+      {
+        "name": "perimeter-controls",
+        "selectors": [{ "type": "HTTP", "path": "/", "pathOperator": "STARTS_WITH" }],
+        "request": [
+          {
+            "name": "CIDR allow-list (agency IP ranges)",
+            "description": "CONOPS 3.1 - IP allow-listing. Step 2 of the egress flow.",
+            "policy": "ip-filtering",
+            "configuration": {
+              "whitelistIps": ["203.0.113.0/24", "198.51.100.0/24", "172.21.0.0/16"],
+              "_comment": "203.0.113.0/24 and 198.51.100.0/24 are RFC 5737 documentation ranges standing in for the real agency CIDR ranges (input 1694-G1) -- in the real deployment, requests from those placeholder ranges would be refused, which is the T-03 behavior and was verified against this exact definition before 172.21.0.0/16 was added (see _secrets/t03-refusal-evidence.json). 172.21.0.0/16 is this laptop's own docker bridge network (the gateway sees all host-originated test traffic as coming from 172.21.0.1 in this single-machine demo topology) and is added here only so the rest of the verification session's successful-path tests (T-01, T-09) can run; it is NOT a stand-in for a real agency range and should be removed before anything resembling a production config review."
+            }
+          },
+          {
+            "name": "Client certificate check",
+            "description": "CONOPS 3.1 - evaluates client certificates. Optional for the laptop demo; enable once you have a test client cert.",
+            "policy": "ssl-enforcement",
+            "enabled": false
+          },
+          {
+            "name": "Rate limit (per-consumer quota)",
+            "description": "CONOPS 3.1 - per-consumer limits to restrain bulk extraction. T-05.",
+            "policy": "rate-limit",
+            "configuration": {
+              "rate": { "limit": 60, "periodTime": 1, "periodTimeUnit": "MINUTES", "key": "{#request.headers['Authorization']}" }
+            }
+          },
+          {
+            "name": "Spike arrest (burst protection)",
+            "description": "CONOPS 3.1 - short-window burst protection. T-05.",
+            "policy": "spike-arrest",
+            "configuration": {
+              "spike": { "limit": 5, "periodTime": 1, "periodTimeUnit": "SECONDS" }
+            }
+          },
+          {
+            "name": "Request schema validation",
+            "description": "CONOPS 3.1 - non-compliant payloads rejected at the edge. T-06.",
+            "policy": "json-validation",
+            "configuration": {
+              "schema": "{\"type\":\"object\",\"additionalProperties\":true}",
+              "_comment": "Tighten this schema to the real Delta Sharing query payload shape once you've captured a few real requests in T-01."
+            }
+          },
+          {
+            "name": "Require bearer token present",
+            "description": "CONOPS 3.1 / 2.1 step 2 - checks that a bearer token is present and well formed. Databricks, not the gateway, validates the token itself.",
+            "policy": "policy-assign-attributes",
+            "configuration": {
+              "scope": "REQUEST",
+              "attributes": [
+                { "name": "has-bearer", "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}" }
+              ]
+            }
+          },
+          {
+            "name": "Inject correlation ID",
+            "description": "CONOPS AC5 / T-11 - every request gets a correlation ID that is logged here and cross-referenced against the Databricks audit log (system.access.audit) by tests/test_t11_trace_correlation.py.",
+            "policy": "transform-headers",
+            "configuration": {
+              "addHeaders": [{ "name": "X-Correlation-Id", "value": "{#request.id}" }]
+            }
+          }
+        ],
+        "response": [
+          {
+            "name": "Header redaction (remove internal headers/hostnames)",
+            "description": "CONOPS 2.1 step 5 / 3.1 - strip infrastructure headers before the response leaves the perimeter. T-07.",
+            "policy": "transform-headers",
+            "configuration": {
+              "removeHeaders": [
+                "X-Databricks-Org-Id",
+                "X-Databricks-Request-Id",
+                "Server",
+                "Via"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "storage-proxy-download",
+        "description": "OD-1(b), decided 10/12: proxy file downloads through the gateway rather than letting the client hit storage directly. T-08. DISABLED in this demo build -- see comment below.",
+        "selectors": [{ "type": "HTTP", "path": "/storage-proxy", "pathOperator": "STARTS_WITH" }],
+        "request": [
+          {
+            "name": "Forward signed request to storage",
+            "enabled": false,
+            "policy": "policy-http-callout",
+            "configuration": {
+              "method": "GET",
+              "url": "{#request.headers['X-Signed-Url'][0]}",
+              "_comment": "DISABLED for this laptop demo. policy-http-callout's schema requires a static or EL-expression 'url', but the real pre-signed URL only exists per-request inside the credential-vending response body (step 4) -- it isn't available as a clean request header or static value without a custom extraction step this demo hasn't built. Per CONOPS' own allowance ('record this as the OD-1 fallback result for T-08'), this flow is recorded here as NOT reproducible solo on a laptop; the documented fallback is 'storage limits plus short-lived credentials' instead of full download-proxying. Re-enable and wire a real 'url' EL expression once the exact pre-signed-URL extraction point is confirmed with the platform team."
+            }
+          }
+        ],
+        "response": [
+          {
+            "name": "Header redaction",
+            "policy": "transform-headers",
+            "configuration": { "removeHeaders": ["X-Amz-Request-Id", "Server"] }
+          }
+        ]
+      }
+    ]
+  },
+  "plans": [
+    {
+      "name": "PSP7-test-recipient",
+      "security": { "type": "KEY_LESS" },
+      "definitionVersion": "V4",
+      "_comment": "KEY_LESS because authorization is the Delta Sharing bearer token itself, validated by Databricks (step 4), not by Gravitee's own plan security. Gravitee's job is perimeter policy, not primary authn, per the CONOPS key architectural principle in Section 1. Created and published via separate REST calls by scripts/05, not embedded in the API creation payload -- this APIM version (4.12.23) does not accept plans embedded in POST /apis."
+    }
+  ]
+}

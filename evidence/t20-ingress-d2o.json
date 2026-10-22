@@ -1,0 +1,412 @@
+{
+  "test_id": "T-20",
+  "description": "Channel I-1 ingress, D2O pull (CONOPS 2.4.1)",
+  "task": "E1 Task 1.10",
+  "date": "2026-10-18T23:36:14.044732Z",
+  "precondition": {
+    "capability_baseline": "evidence/capability-baseline-d2o-import.json",
+    "verdict": "CONTROL_PLANE_BLOCKED_BY_LOCAL_TOPOLOGY",
+    "means": "The capability question -- may this tier import a D2O credential file at all -- is answered THERE, not here. Kept separate so a precondition can never be mistaken for the test result."
+  },
+  "credential": {
+    "endpoint": "http://localhost:8086/delta-sharing",
+    "endpoint_host": "localhost",
+    "endpoint_port": 8086,
+    "share_credentials_version": 1,
+    "fields_present": [
+      "bearerToken",
+      "endpoint",
+      "expirationTime",
+      "shareCredentialsVersion"
+    ],
+    "bearer_token_length": 43,
+    "bearer_token_sha256_12": "2544b15200ca",
+    "expiration_time": null
+  },
+  "scrubber_contract": {
+    "verdict": "VERIFIED",
+    "gate_patterns_applied": 10,
+    "bar": "scripts/check_secret_hygiene.py TOKEN_PATTERNS, imported not restated, so 'scrubbed' means 'the gate accepts it'.",
+    "fixture_tripped_before_scrubbing": [
+      "pre-signed URL (SigV4 signature)",
+      "pre-signed URL (SigV4 credential scope)"
+    ],
+    "fixture_provenance": "Synthesised at runtime from a published seed, so its falsity is verifiable by recomputation rather than asserted. No credential-shaped literal is stored in the test. See B-17.",
+    "checked": [
+      "the fixture trips >=2 gate patterns BEFORE scrubbing, so the test is not vacuous",
+      "gate patterns do not match a scrubbed SigV4 URL",
+      "host survives scrubbing (it is the T-20 evidence)",
+      "idempotent across the three passes (B-16)",
+      "a URL with no query is left intact",
+      "every URL in a multi-URL string is covered"
+    ],
+    "means": "This record's pre-signed URLs are redacted because the redaction was tested in the same run that wrote them, not because no secret happened to appear."
+  },
+  "path_a_control_plane": {
+    "5a_import_provider": {
+      "conops": "2.4.1 step 5 (D2O): import the provider from the file",
+      "hat": "metastore admin / catalog creator (2.4.2)",
+      "status": 200,
+      "verdict": "IMPORTED",
+      "error_code": null,
+      "message": null,
+      "means": "The provider object exists. Note what this does NOT mean: creation validates the endpoint as a URL and nothing more (baseline check 2), so an import that returns 200 is not evidence the provider can be reached."
+    },
+    "5b_confirm_shares": {
+      "conops": "2.4.1 step 5 -- present in the D2D column as SHOW SHARES IN PROVIDER, ABSENT from the D2O column",
+      "hat": "metastore admin / catalog creator (2.4.2)",
+      "status": 400,
+      "verdict": "REFUSED_REACHABILITY",
+      "error_code": "BAD_REQUEST",
+      "message": "DS_FAILED_REQUEST_TO_OPEN_DS_SERVER: Error while connecting to the sharing server at http://localhost:8086/delta-sharing/shares,[Trace Id: eab08bc4d24b1f32e76178c5a2465e72] error: class java.lang.SecurityException",
+      "shares": [],
+      "means": "Refused. Per the baseline this is java.lang.SecurityException against a loopback endpoint, while the same call to a public routable host returns a real 404 -- so the blocker is the address class, not the tier and not the procedure. This is where Path A stops, and it stops for a reason a client on a routable network does not have."
+    },
+    "5c_create_catalog": {
+      "conops": "2.4.1 step 5 (D2O): then create a catalog from the share",
+      "hat": "metastore admin / catalog creator (2.4.2)",
+      "status": 200,
+      "verdict": "CREATED",
+      "error_code": null,
+      "message": null,
+      "means": "A CATALOG WAS CREATED OVER A PROVIDER THE CONTROL PLANE CANNOT REACH. Following \u00a72.4.1's D2O column literally -- import, then create the catalog, with no confirming call between them -- therefore produces a catalog that looks healthy and fails at the first consumer query. That is a v1.6 document defect, not a prototype artefact: the D2D column has the confirming call and the D2O column does not."
+    },
+    "6_grant": {
+      "conops": "2.4.1 step 6: USE CATALOG, USE SCHEMA, SELECT to consumer groups",
+      "hat": "catalog owner (2.4.2)",
+      "status": 200,
+      "verdict": "GRANTED",
+      "error_code": null,
+      "message": null,
+      "principal": "account users",
+      "means": "Grants applied to a catalog whose data is unreadable. The ACCESS CONTROL half of step 6 is demonstrable here; the entitled read is Path B's, through the connector."
+    },
+    "cleanup": {
+      "catalog": {
+        "delete_status": 200,
+        "verify_status": 404,
+        "verdict": "DELETED"
+      },
+      "provider": {
+        "delete_status": 200,
+        "verify_status": 404,
+        "verdict": "DELETED"
+      }
+    }
+  },
+  "path_b_client": {
+    "capture": {
+      "phase": "capture",
+      "filter": "none",
+      "read": {
+        "discovery": {
+          "verdict": "LISTED",
+          "table_count": 1,
+          "tables": [
+            "awoz_share.opensharing_test.test_dataset"
+          ]
+        },
+        "data": {
+          "verdict": "READ",
+          "row_count": 7,
+          "columns": [
+            "record_id",
+            "region",
+            "classification",
+            "amount",
+            "note"
+          ]
+        }
+      },
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 8086,
+          "resolved": 2,
+          "refused": 0,
+          "stages": [
+            "discovery",
+            "data"
+          ],
+          "role": "provider_endpoint",
+          "conops_ref": "CONOPS 2.4.3 approved provider endpoint"
+        },
+        {
+          "host": "objectstore",
+          "port": 8000,
+          "resolved": 1,
+          "refused": 0,
+          "stages": [
+            "data"
+          ],
+          "role": "presigned_url_storage_host",
+          "conops_ref": "CONOPS 2.4.3 storage hosts serving pre-signed file URLs"
+        }
+      ],
+      "socket_log": {
+        "resolutions": 3,
+        "connects": 2,
+        "refused": [],
+        "unresolved_connects": []
+      },
+      "subprocess_returncode": 0
+    },
+    "sufficiency": {
+      "phase": "sufficient",
+      "filter": [
+        "localhost",
+        "objectstore"
+      ],
+      "read": {
+        "discovery": {
+          "verdict": "LISTED",
+          "table_count": 1,
+          "tables": [
+            "awoz_share.opensharing_test.test_dataset"
+          ]
+        },
+        "data": {
+          "verdict": "READ",
+          "row_count": 7,
+          "columns": [
+            "record_id",
+            "region",
+            "classification",
+            "amount",
+            "note"
+          ]
+        }
+      },
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 8086,
+          "resolved": 2,
+          "refused": 0,
+          "stages": [
+            "discovery",
+            "data"
+          ],
+          "role": "provider_endpoint",
+          "conops_ref": "CONOPS 2.4.3 approved provider endpoint"
+        },
+        {
+          "host": "objectstore",
+          "port": 8000,
+          "resolved": 1,
+          "refused": 0,
+          "stages": [
+            "data"
+          ],
+          "role": "presigned_url_storage_host",
+          "conops_ref": "CONOPS 2.4.3 storage hosts serving pre-signed file URLs"
+        }
+      ],
+      "socket_log": {
+        "resolutions": 3,
+        "connects": 2,
+        "refused": [],
+        "unresolved_connects": []
+      },
+      "subprocess_returncode": 0
+    },
+    "necessity": {
+      "phase": "necessary",
+      "filter": [
+        "localhost"
+      ],
+      "read": {
+        "discovery": {
+          "verdict": "LISTED",
+          "table_count": 1,
+          "tables": [
+            "awoz_share.opensharing_test.test_dataset"
+          ]
+        },
+        "data": {
+          "verdict": "FAILED",
+          "error_type": "FileNotFoundError",
+          "error": "http://objectstore:8000/awoz-opensharing/test_dataset/region%3Dwest/part-00000-61439623-1f9b-44ee-8e26-f2fe7e90941d-c000.snappy.parquet?<redacted-presigned-query>"
+        }
+      },
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 8086,
+          "resolved": 2,
+          "refused": 0,
+          "stages": [
+            "discovery",
+            "data"
+          ],
+          "role": "provider_endpoint",
+          "conops_ref": "CONOPS 2.4.3 approved provider endpoint"
+        },
+        {
+          "host": "objectstore",
+          "port": 8000,
+          "resolved": 1,
+          "refused": 1,
+          "stages": [
+            "data"
+          ],
+          "role": "refused_by_filter",
+          "conops_ref": "not contacted in this phase"
+        }
+      ],
+      "socket_log": {
+        "resolutions": 3,
+        "connects": 2,
+        "refused": [
+          {
+            "host": "objectstore",
+            "port": 8000
+          }
+        ],
+        "unresolved_connects": []
+      },
+      "subprocess_returncode": 0
+    },
+    "allowlist_verdict": "NECESSARY_AND_SUFFICIENT",
+    "necessity_attribution": {
+      "discovery_with_provider_only": "LISTED",
+      "data_with_provider_only": "FAILED",
+      "means": "Discovery succeeded and the data read failed with the storage host denied, which attributes the two allow-list entries to different layers: the provider endpoint carries discovery, the storage host carries the pre-signed data transfer. Had discovery failed too, the data failure would prove nothing about storage."
+    },
+    "method_note": "Hosts captured by hooking socket.getaddrinfo and socket.socket.connect, not by parsing pre-signed URLs out of the /query response. The JSON-derived capture in evidence/capability-baseline-d2o.json records only ['objectstore'] and omits the provider endpoint it was itself talking to, so an allow-list built from it would fail at discovery. Each phase ran in a FRESH SUBPROCESS: sharing one process would let a pooled connection or cached resolution satisfy a later phase without the filter firing, and the necessity phase would pass without testing anything.",
+    "enforcement_caveat": "The filter refuses name resolution inside the test process. That establishes which hosts the READ DEPENDS ON -- the thing needed to generate a correct allow-list -- and does NOT establish that any firewall enforces it. Enforcement is a client-environment control."
+  },
+  "role_table": [
+    {
+      "role": "Requester",
+      "held_by_conops": "Consuming team in the platform",
+      "hat_worn_here": "CONOPS owner, acting as requester",
+      "steps": [
+        "1"
+      ],
+      "status": "SIMULATED_SINGLE_OPERATOR",
+      "note": "No ticket system in the prototype; the request is this record."
+    },
+    {
+      "role": "Approver",
+      "held_by_conops": "Data Governance",
+      "hat_worn_here": "CONOPS owner, acting as approver",
+      "steps": [
+        "1"
+      ],
+      "status": "SIMULATED_SINGLE_OPERATOR",
+      "note": "A1 is unmet -- 1694-G1 has not arrived -- so the approval is provisional and labelled as such, not recorded as governance sign-off."
+    },
+    {
+      "role": "Metastore admin / catalog creator",
+      "held_by_conops": "Client-side admin (to be named)",
+      "hat_worn_here": "CONOPS owner, via DATABRICKS_TOKEN",
+      "steps": [
+        "5a",
+        "5b",
+        "5c"
+      ],
+      "status": "EXERCISED",
+      "note": "CREATE PROVIDER and CREATE CATALOG both exercised for real."
+    },
+    {
+      "role": "Credential custodian",
+      "held_by_conops": "Named person in Data Eng",
+      "hat_worn_here": "CONOPS owner, acting as custodian",
+      "steps": [
+        "4"
+      ],
+      "status": "EXERCISED",
+      "note": "File vaulted at 0600 in _secrets/, gitignored, asserted by scripts/check_secret_hygiene.py. \u00a72.4.2 says the custodian has no need to read the data -- UNSEPARATED here, because one operator also holds the read. Stated rather than implied."
+    },
+    {
+      "role": "Catalog owner",
+      "held_by_conops": "Data owner for the use case",
+      "hat_worn_here": "CONOPS owner, acting as catalog owner",
+      "steps": [
+        "6"
+      ],
+      "status": "EXERCISED_PARTIAL",
+      "note": "Grants issued to 'account users'. On this tier that group is effectively everyone, so DEFAULT DENY is asserted by the procedure and not demonstrated by this grant."
+    },
+    {
+      "role": "Security approver",
+      "held_by_conops": "Platform security",
+      "hat_worn_here": "CONOPS owner, acting as security approver",
+      "steps": [
+        "allow-list change"
+      ],
+      "status": "SIMULATED_SINGLE_OPERATOR",
+      "note": "\u00a72.4.3 requires approval for every allow-list change. The generated file is the artefact that approval would attach to."
+    },
+    {
+      "role": "Provider",
+      "held_by_conops": "External party",
+      "hat_worn_here": "CONOPS owner, as the OSS provider operator",
+      "steps": [
+        "2",
+        "3"
+      ],
+      "status": "EXERCISED",
+      "note": "Token and credential file issued by scripts/10. Genuinely the open protocol, but NOT an arm's-length counterparty -- the same operator holds both ends."
+    }
+  ],
+  "role_separation_caveat": "Every hat in \u00a72.4.2 was worn by one operator. The SEQUENCE and the ARTEFACTS are therefore real evidence; the SEGREGATION OF DUTIES is not, and T-20 must not be read as testing it. The separation that can be tested here is the custodian/data-owner split in \u00a72.4.2, and it was not exercised.",
+  "step_coverage": [
+    {
+      "step": 1,
+      "name": "Request and approval",
+      "verdict": "SIMULATED",
+      "note": "Recorded in role_table; no ticket system."
+    },
+    {
+      "step": 2,
+      "name": "Identity exchange",
+      "verdict": "EXERCISED",
+      "note": "Credential file delivered provider -> custodian (scripts/10)."
+    },
+    {
+      "step": 3,
+      "name": "Provider action",
+      "verdict": "EXERCISED",
+      "note": "Token issued; expirationTime recorded in the credential."
+    },
+    {
+      "step": 4,
+      "name": "Custody",
+      "verdict": "EXERCISED",
+      "note": "0600, gitignored, hygiene-gated."
+    },
+    {
+      "step": 5,
+      "name": "Connect",
+      "verdict": "SPLIT",
+      "note": "Control-plane half blocked by our loopback address (Path A, attributed via the baseline). Client half exercised in full (Path B)."
+    },
+    {
+      "step": 6,
+      "name": "Grant",
+      "verdict": "PARTIAL",
+      "note": "Grants applied; default deny not demonstrated on this tier."
+    },
+    {
+      "step": 7,
+      "name": "Land and validate",
+      "verdict": "OUT_OF_SCOPE",
+      "note": "\u00a72.4.4, test T-22."
+    },
+    {
+      "step": 8,
+      "name": "Register",
+      "verdict": "EXERCISED",
+      "note": "This evidence file is the inventory row: provider, share, catalog, owner, tier, DSA reference pending, plus the credential expiry \u00a72.4.1 adds for D2O."
+    }
+  ],
+  "allowlist_file": "iac/config/outbound-allow-list.yaml",
+  "verdict": {
+    "path_a": "BLOCKED_BY_LOCAL_TOPOLOGY_ATTRIBUTED",
+    "path_b": "NECESSARY_AND_SUFFICIENT",
+    "t20": "PASS_WITH_SCOPE",
+    "scope": "The D2O pull is demonstrated end to end through the open connector, and the outbound allow-list is derived from an observed capture and shown to be both necessary and sufficient. The Databricks-native control-plane read is not demonstrated, for a reason measured rather than assumed. Hostnames do not transfer; the procedure does."
+  }
+}

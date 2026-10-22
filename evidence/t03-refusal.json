@@ -1,0 +1,115 @@
+{
+  "test_id": "T-03",
+  "epic_task": "E1 Task 1.6",
+  "acceptance_criteria": [
+    "AC1",
+    "AC2"
+  ],
+  "conops": [
+    "2.3.2",
+    "3.1"
+  ],
+  "run_at": "2026-10-22T07:39:01.441362Z",
+  "subject_recipient": "psp7-demo-recipient",
+  "edge_path": "/opensharing-demo/psp7-demo",
+  "edge_base": "http://localhost:8082",
+  "edge_base_source": "ENV_EXPLICIT",
+  "edge_base_note": null,
+  "live_api_id": "faa46526-db4d-44aa-a465-26db4d94aab2",
+  "impossible_cidr": "203.0.113.9/32",
+  "prior_result_status": "UNVERIFIABLE. docs/12 \u00a712.2 records a 403 ip-filtering pass on 2026-10-17 against the API at /opensharing-demo/, which had flows: 0 -- no ip-filtering policy existed on it to produce that 403. The API was deleted 2026-10-21. The attribution cannot be reconstructed, so the prior pass is superseded by this run rather than confirmed by it (B-19: labelled, not erased).",
+  "phase1_before": {
+    "status": 200,
+    "responder": {
+      "round_trip_headers": true,
+      "vocabulary": "UNRECOGNISED",
+      "responder": "NOT_A_REFUSAL",
+      "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+    },
+    "detail": "{\"items\":[{\"name\":\"awoz1227-psp7-demo-share\",\"id\":\"3604b4ba-892d-4f31-a5ac-fadcba237533\",\"has_genie_space\":false}]}"
+  },
+  "flows_armed": [
+    "S1-class-A",
+    "S10-class-C",
+    "S2-class-A",
+    "S3-class-A",
+    "S4-class-A",
+    "S5-class-A",
+    "S6-class-A",
+    "S7-class-A",
+    "S8-class-B",
+    "S9-class-B"
+  ],
+  "flows_armed_note": "Every ip-filtering policy in the definition was armed, not just the one on the path under test. See set_ip_filter().",
+  "phase2_put_status": 200,
+  "phase2_deploy_status": 202,
+  "phase2_armed": {
+    "status": 403,
+    "responder": {
+      "round_trip_headers": true,
+      "vocabulary": "EDGE_IP_FILTERING",
+      "responder": "EDGE_IP_FILTERING_POLICY",
+      "observed_client_ip": "172.21.0.1",
+      "meaning": "Gravitee's ip-filtering policy refused this request, by name and in its own words. This is a POSITIVE identification of one named policy, not the catch-all -- the distinction B-46 exists to preserve. The policy also reports the address it observed, which is the address the allow-list is actually matched against."
+    },
+    "detail": "Your IP (172.21.0.1) or some proxies whereby your request pass through are not allowed to reach this resource."
+  },
+  "phase2_direct_bypass": {
+    "status": 200,
+    "responder": {
+      "round_trip_headers": false,
+      "vocabulary": "UNRECOGNISED",
+      "responder": "NOT_A_REFUSAL",
+      "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+    },
+    "detail": "{\"items\":[{\"name\":\"awoz1227-psp7-demo-share\",\"id\":\"3604b4ba-892d-4f31-a5ac-fadcba237533\",\"has_genie_space\":false}]}"
+  },
+  "phase2_direct_bypass_note": "Read during the phase-2 window with the edge allow-list armed. This is NOT a control for the refusal -- it is a separate measurement of what the edge allow-list does and does not reach.",
+  "phase3_put_status": 200,
+  "phase3_deploy_status": 202,
+  "phase3_after": {
+    "status": 200,
+    "responder": {
+      "round_trip_headers": true,
+      "vocabulary": "UNRECOGNISED",
+      "responder": "NOT_A_REFUSAL",
+      "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+    },
+    "detail": "{\"items\":[{\"name\":\"awoz1227-psp7-demo-share\",\"id\":\"3604b4ba-892d-4f31-a5ac-fadcba237533\",\"has_genie_space\":false}]}"
+  },
+  "verdict": "REFUSED_AT_THE_EDGE_AND_REVERSIBLE",
+  "why": "200 before, 403 with the allow-list armed, 200 again after restoring it -- same path, same credential, same run, one variable. The refusing policy named ITSELF in the response body, so this is a positive attribution rather than the absence of a competing one (B-44, B-46). And the reversal rules out 'the config change broke the route', which a two-phase test could not have distinguished.",
+  "observed_client_ip_at_the_edge": "172.21.0.1",
+  "observed_client_ip_finding": {
+    "address": "172.21.0.1",
+    "is_private": true,
+    "why_it_matters": "This is the address Gravitee's ip-filtering policy compares against the allow-list. It is NOT the address Databricks sees: Databricks sees this host's public NAT address, while the gateway -- a container on the same host as the client -- sees a private one. Two controls both called 'the IP allow-list', keyed on addresses from different address spaces. 11.7 B-35 argued this; this is the measurement.",
+    "generator_consequence": "scripts/29_gen_gravitee_route_family.py defines LOCAL_TEST_CIDR = 172.21.0.0/16 and ADDS it to the allow-list whenever a recipient's ip_access_list_mode is APPLIED. The observed client address falls inside that CIDR. So every allow-list the generator emits in APPLIED mode admits the whole Docker bridge network -- which is every client that can reach the gateway from this host. The control is vacuous in exactly the configuration that is supposed to enforce it.",
+    "near_miss": "T-03 would have reported ALLOW_LIST_NOT_ENFORCED if it had used t02-iplist -- the recipient whose allow-list is APPLIED -- because that list contains LOCAL_TEST_CIDR and this client is inside it. The subject was chosen for a different reason (t02-iplist has no reachable 200 control), so the test passed by luck of subject selection, not by the control working everywhere.",
+    "severity": "A test accommodation that silently disables the control under test, in a file whose whole purpose is to be the deployable source of truth for AC6 / T-12 'redeploy from code'. If promoted, the allow-list ships open.",
+    "related": [
+      "11.7 B-35",
+      "11.7 B-47",
+      "T-02",
+      "AC2",
+      "T-12"
+    ]
+  },
+  "edge_is_not_the_only_door": {
+    "observed": "edge 403, direct 200, same credential, same window",
+    "meaning": "The edge allow-list controls access THROUGH THE EDGE. It does not control access to the share. The same bearer token read the same data over the open internet while the edge was refusing it.",
+    "not_a_defect_in": "Gravitee, which did exactly what it was told",
+    "conops_consequence": "\u00a72.3.2 reads as though the edge allow-list is a control over access. AC2's acceptance text should say 'refused at the edge' rather than 'refused', and v1.6 should state which of the two allow-lists -- the gateway's or the Databricks-side one -- is the control of record for address-based refusal. Only the second can close the direct path, and 11.7 B-38 / D-8 show it gates its own enrolment.",
+    "related": [
+      "11.7 B-35",
+      "11.7 B-38",
+      "10.7 D-8",
+      "T-02"
+    ]
+  },
+  "what_this_does_not_prove": [
+    "T-02. The Databricks-side IP access list is a different control at a different layer and was not touched. The two allow-lists do not observe the same address: Databricks sees this host's public NAT address, the gateway sees a private one.",
+    "That the allow-list protects the DATA. See edge_is_not_the_only_door when present.",
+    "T-05 or T-07. No limiter was exercised and no header claim is made."
+  ]
+}

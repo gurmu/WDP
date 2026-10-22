@@ -1,0 +1,431 @@
+{
+  "_generated": {
+    "by": "scripts/30_gen_gravitee_ai_route.py",
+    "at": "2026-10-21T20:33:35.301657Z",
+    "epic_task": "E1 Task 1.9",
+    "tests": [
+      "T-15",
+      "T-16"
+    ],
+    "inputs": {
+      "route-table.yaml": "701e8f0c46ec",
+      "policy-classes.yaml": "1776ec999fcd"
+    },
+    "status": "PROTOTYPE_R12A_ONLY",
+    "status_because": "Builds the injection half of R12 (can the gateway supply an upstream identity at all). Does NOT build R12b (can it do so without holding a long-lived secret), and injects a personal access token rather than a per-consumer service principal OAuth token. \u00a73.2 is NOT demonstrated by this artifact.",
+    "route": "M1 (model) + M3 (deny)",
+    "edge_path": "/ai-gateway-demo",
+    "upstream_host": "dbc-0c6ebc56-563d.cloud.databricks.com",
+    "secret_handling": "The injected value is a property REFERENCE. The property ships empty and is filled from DATABRICKS_TOKEN at import time. Verified by assert_no_token_in_output, not asserted.",
+    "fill_property_at_import": {
+      "property": "databricks_upstream_token",
+      "from_env": "DATABRICKS_TOKEN"
+    }
+  },
+  "api": {
+    "name": "AWOZ-1227 E3 AI Gateway",
+    "apiVersion": "1.0.0",
+    "definitionVersion": "V4",
+    "type": "PROXY",
+    "description": "Channel E-3: one approved model service (M1), an explicit deny carrying the CONOPS reason for legacy managed MCP (M3), and a TERMINAL ALLOW-LIST that refuses every path no flow claims. Without that last flow an unmatched path is forwarded to the workspace root, which made this route an open proxy to the whole Databricks REST API (AI-7). PROTOTYPE -- injects a personal access token, not a per-consumer service principal OAuth token. See the generated _rationale blocks.",
+    "listeners": [
+      {
+        "type": "HTTP",
+        "paths": [
+          {
+            "path": "/ai-gateway-demo"
+          }
+        ],
+        "entrypoints": [
+          {
+            "type": "http-proxy"
+          }
+        ]
+      }
+    ],
+    "endpointGroups": [
+      {
+        "name": "default-group",
+        "type": "http-proxy",
+        "endpoints": [
+          {
+            "name": "workspace",
+            "type": "http-proxy",
+            "weight": 1,
+            "inheritConfiguration": false,
+            "configuration": {
+              "target": "https://dbc-0c6ebc56-563d.cloud.databricks.com"
+            },
+            "_rationale": {
+              "target_is_workspace_root_because": "route-table.yaml M1.target = workspace_host. The flow selector carries the full protocol path, so the target must contribute no path segment of its own.",
+              "m3_path_note": "M3's selector is /api/2.0/mcp/* and M3 is a deny that never forwards. With this target, if M3's deny policy fails to load (AI-4) the request forwards to the correct legacy MCP path rather than a doubled one -- so a failed deny shows up as a real response instead of a 404 that looks like a deny. T-16 can tell the difference only because of this."
+            }
+          }
+        ]
+      }
+    ],
+    "flows": [
+      {
+        "name": "M1-class-E",
+        "enabled": true,
+        "selectors": [
+          {
+            "type": "HTTP",
+            "path": "/serving-endpoints/databricks-gpt-oss-20b/invocations",
+            "pathOperator": "EQUALS",
+            "methods": [
+              "POST"
+            ]
+          }
+        ],
+        "request": [
+          {
+            "name": "Require bearer token present",
+            "policy": "policy-assign-attributes",
+            "enabled": true,
+            "configuration": {
+              "scope": "REQUEST",
+              "attributes": [
+                {
+                  "name": "has-bearer",
+                  "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+                }
+              ]
+            },
+            "_rationale": {
+              "conops": "3.1 / 2.1 step 2",
+              "note": "Presence and well-formedness only. The gateway does NOT validate the token -- Databricks does, at step 4. This is the key architectural principle in \u00a71 and the reason the plans are KEY_LESS."
+            }
+          },
+          {
+            "name": "Inject correlation ID",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "addHeaders": [
+                {
+                  "name": "X-Correlation-Id",
+                  "value": "{#request.id}"
+                }
+              ]
+            },
+            "_rationale": {
+              "conops": "AC5 / T-11",
+              "note": "Cross-referenced against system.access.audit by T-11. The header must be ADDED on the request so it appears in both logs; a response-side correlation id correlates nothing."
+            }
+          },
+          {
+            "name": "Strip the caller's Authorization header",
+            "description": "Step 1 of 2. Removes the caller's credential BEFORE the gateway's is added, so the injection is a replacement. Must stay immediately before the inject step; see _rationale.",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "scope": "REQUEST",
+              "removeHeaders": [
+                "Authorization"
+              ],
+              "addHeaders": []
+            }
+          },
+          {
+            "name": "Inject the gateway's upstream identity (R12a)",
+            "description": "CONOPS 3.2. The external caller holds no Databricks credential; the gateway supplies one. PROTOTYPE: the value is a personal access token, NOT a per-consumer service principal OAuth token -- see _rationale.",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "addHeaders": [
+                {
+                  "name": "Authorization",
+                  "value": "Bearer {#properties['databricks_upstream_token']}"
+                }
+              ],
+              "removeHeaders": [],
+              "scope": "REQUEST"
+            }
+          },
+          {
+            "name": "Rate limit (per-consumer quota)",
+            "policy": "rate-limit",
+            "enabled": true,
+            "configuration": {
+              "rate": {
+                "limit": 30,
+                "periodTime": 1,
+                "periodTimeUnit": "MINUTES",
+                "key": "{#request.headers['Authorization']}"
+              }
+            },
+            "_rationale": {
+              "conops": "3.1 / T-05 / T-15"
+            }
+          },
+          {
+            "name": "Spike arrest (burst protection)",
+            "policy": "spike-arrest",
+            "enabled": true,
+            "configuration": {
+              "spike": {
+                "limit": 3,
+                "periodTime": 1,
+                "periodTimeUnit": "SECONDS"
+              }
+            },
+            "_rationale": {
+              "conops": "3.1 / T-05 / T-15"
+            }
+          }
+        ],
+        "response": [
+          {
+            "name": "Header redaction",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "removeHeaders": [
+                "X-Databricks-Org-Id",
+                "X-Databricks-Request-Id",
+                "Server",
+                "Via",
+                "server-timing",
+                "x-request-id",
+                "X-Gravitee-Request-Id",
+                "X-Gravitee-Transaction-Id"
+              ]
+            },
+            "_rationale": {
+              "conops": "2.1 step 5 / 3.1",
+              "measured_state_superseded": "T-07 FAILS AS CONFIGURED. A working 200 through the gateway was observed leaking `server: databricks`, `server-timing`, `x-request-id` and X-Gravitee-* headers. The first four names in this list were in api-definition.json already and the leak happened anyway, which means the list was incomplete -- `Server` with a capital S does not match `server` if the policy compares case-sensitively, and `server-timing` / `x-request-id` were never listed at all. The last four names are added here as the candidate fix and are UNVERIFIED until T-07 re-runs.",
+              "measured_state_superseded_note": "Carried in place, not deleted (B-19). It was right about the cause and wrong about the remedy for two of the five headers.",
+              "measured_state": "PARTIALLY VERIFIED 2026-10-21 by T-01's before/after capture (same path, same credential, same run, direct response beside the gateway response). THREE of the five leaked headers are now gone through the edge and still present direct -- `server`, `server-timing` and `x-request-id` -- so for those the diagnosis above was correct and this list is the fix. TWO survive: `x-gravitee-request-id` and `x-gravitee-transaction-id`. Listing them here does NOT remove them and the entries are retained only so the attempt is on the record. See `unreachable_by_policy`. Evidence: evidence/t01-gateway-read.json, per_recipient[*] .routes[*].headers.",
+              "unreachable_by_policy": {
+                "headers": [
+                  "x-gravitee-request-id",
+                  "x-gravitee-transaction-id"
+                ],
+                "why": "These are the gateway's OWN correlation headers, attached by Gravitee outside the API's policy chain. A response transform-headers policy runs BEFORE they exist, so it cannot remove them. This is not an incomplete list; it is the wrong layer.",
+                "remedy": "Gateway configuration (the gateway's http/report settings), not an API definition. Which means it is NOT expressible in the per-API definitions scripts/29 generates.",
+                "consequence_for_t12": "AC6 / T-12 claim \"redeploy from code\". A fix that lives in gateway config is outside the IaC set this repository currently versions, so the claim has a hole here until the gateway's own configuration is captured as code too. Recorded rather than fixed, because widening the IaC scope is an E2 decision, not a Task 1.6 one.",
+                "consequence_for_conops": "\u00a72.3's header-hygiene language assumes policy is sufficient to control the perimeter's response surface. It is not. Two headers naming the gateway, its request and its transaction reach every recipient. T-07 should assert the three headers it CAN control and record these two as a configuration item with an owner -- failing on all five hides the distinction between a misconfiguration and an architectural limit.",
+                "status": "OPEN -- v1.6 input"
+              },
+              "must_not_remove": [
+                "delta-sharing-capabilities"
+              ],
+              "must_not_remove_because": "\u00a72.3.2 requires the capability header to pass through on S7. The sanitizer and the passthrough requirement meet on that one route, and a remove-list written as \"strip everything unrecognised\" takes this one with it. Allow-list the removals, never deny-list them -- same rule as the IPv4 redaction convention."
+            }
+          }
+        ],
+        "_rationale": {
+          "route_id": "M1",
+          "channel": "E-3",
+          "approved_model": "databricks-gpt-oss-20b",
+          "path_is_literal_not_wildcard": "route-table M1 exposure_scope: 'One approved model service per route. Not a wildcard over /serving-endpoints.' The model name is therefore literal in the selector. A wildcard here would expose all 12 endpoints the probe listed, including the embedding models, on a route approved for one.",
+          "policy_class": "E",
+          "class_e_precedence_problem": "Class E carries the two-limiter problem recorded in policy-classes.yaml: Gravitee's rate-limit and the platform's own quota can both refuse, and a 429 does not say which. T-15's limiter phase measures it by running the burst twice -- Gravitee's limit below the platform's, then above it -- and attributing the refusal from the body."
+        }
+      },
+      {
+        "name": "M3-explicit-deny-legacy-mcp",
+        "enabled": true,
+        "selectors": [
+          {
+            "type": "HTTP",
+            "path": "/api/2.0/mcp",
+            "pathOperator": "STARTS_WITH"
+          }
+        ],
+        "request": [
+          {
+            "name": "Deny legacy managed MCP",
+            "description": "Databricks documents that these bypass Unity AI Gateway grants, policies and guardrails, and their calls do not appear in the tracing tables. A route that is invisible to the audit path cannot satisfy AC5 on any consumer.",
+            "policy": "mock",
+            "enabled": true,
+            "configuration": {
+              "status": "403",
+              "headers": [
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "name": "X-AWOZ-Refused-By",
+                  "value": "M3-explicit-deny"
+                }
+              ],
+              "content": "{\n  \"error\": \"route_not_exposed\",\n  \"marker\": \"AWOZ-1227-M3-LEGACY-MCP-DENIED-AT-THE-EDGE\",\n  \"route_id\": \"M3\",\n  \"refused_by\": \"AWOZ-1227 edge, by explicit decision\",\n  \"reason\": \"Databricks documents that these bypass Unity AI Gateway grants, policies and guardrails, and their calls do not appear in the tracing tables. A route that is invisible to the audit path cannot satisfy AC5 on any consumer.\",\n  \"conops_ref\": \"\\u00a72.3.2 row M3; \\u00a73.1.2\"\n}"
+            },
+            "_rationale": {
+              "route_id": "M3",
+              "enforcement": "reason_carrier_NOT_the_enforcing_control",
+              "enforcement_note": "The control that actually keeps unlisted paths off the upstream is the terminal allow-list at the end of the flow array. This flow exists so the refusal is a legible DECISION rather than an anonymous 403, and so T-16 can attribute the refusal to M3 by name. If this flow were deleted, the path would still be refused -- with no reason attached.",
+              "not_exposed_because": "Databricks documents that these bypass Unity AI Gateway grants, policies and guardrails, and their calls do not appear in the tracing tables. A route that is invisible to the audit path cannot satisfy AC5 on any consumer.",
+              "conops_ref": "\u00a72.3.2 row M3; \u00a73.1.2",
+              "attribution_marker": "AWOZ-1227-M3-LEGACY-MCP-DENIED-AT-THE-EDGE",
+              "why_the_reason_is_here": "route-table.yaml sets carry_reason_into_generated_artifact: true on this row. An auditor reads the deployed definition, not the YAML two directories away. And an OMITTED route and a REFUSED route are the same absence in a deployed gateway -- only one of them is a decision, and the definition has to say which.",
+              "superseded_2026_10_21": "B-19. This step was previously policy-request-validation with configuration {'rules': [], 'status': '403'} and a comment claiming an empty rule set refuses everything reaching the flow. MEASURED FALSE by T-16: the policy validates each rule in turn, so an empty rule set has nothing to fail and PASSES everything. The flow forwarded legacy MCP requests to the upstream, which answered 404, and a reader without attribution would have scored that 404 as a successful block. AI-4 predicted this exact direction of failure and is now closed by measurement, not by argument.",
+              "policy_shape_now_verified": "policy id 'mock', fields status/headers/content, read from GET /policies/mock/schema on this installation on 2026-10-21. The previous shape was never checked against that endpoint, which is what AI-4 flagged and what turned out to be the defect.",
+              "still_unverified": "That `mock` SHORT-CIRCUITS in the request phase of a V4 proxy API has not been observed here. If it does not, this flow contributes nothing and the terminal allow-list refuses the path instead -- a 403 with no reason in it. T-16 distinguishes the two outcomes by the marker above and reports them as different verdicts, so this cannot be mistaken for a working deny.",
+              "positive_control_required": "Both candidate legacy MCP paths already return 404 UPSTREAM (policy-classes.yaml m3_note), so an edge block and an absent endpoint are the same observation. T-16 cannot claim this deny works without a same-path positive control: the same path with this flow DISABLED must return something other than this 403, in the same run (B-40). NOTE: with the terminal allow-list in place, disabling THIS flow alone still yields a 403 -- from the allow-list. So the control now has to disable both, and the two refusals are told apart by the marker, not by the status code."
+            }
+          }
+        ],
+        "response": []
+      },
+      {
+        "name": "X-terminal-allow-list",
+        "enabled": true,
+        "selectors": [
+          {
+            "type": "HTTP",
+            "path": "/",
+            "pathOperator": "STARTS_WITH"
+          }
+        ],
+        "request": [
+          {
+            "name": "Allow only the paths the route table names",
+            "description": "Fails closed on every path no flow claims. Without this, an unmatched path is FORWARDED to the workspace root -- measured 2026-10-21, see _rationale.",
+            "policy": "resource-filtering",
+            "enabled": true,
+            "configuration": {
+              "whitelist": [
+                {
+                  "pattern": "/serving-endpoints/databricks-gpt-oss-20b/invocations",
+                  "methods": [
+                    "POST"
+                  ]
+                }
+              ],
+              "normalizeRequestPath": true,
+              "decodeEncodedSlash": true
+            },
+            "_rationale": {
+              "risk": "B-48",
+              "measured_before": "With a valid caller token and no such flow: /ai-gateway-demo/api/2.0/token/list -> 200, /api/2.0/clusters/list -> 200, /api/2.0/serving-endpoints -> 200. The AI route was an open reverse proxy to the entire Databricks workspace REST API, running as the gateway's injected identity.",
+              "measured_after": "Verified live on 2026-10-21 by PUT and deploy before being written here: token/list 403, mcp/servers 403, serving-endpoints 403, clusters/list 403, all with {'message':\"You're not allowed to access this resource\",'http_status_code':403}; and the M1 model path still 200 with no caller credential. The fix was measured first and generated second, not the other way round.",
+              "patterns_with_provenance": [
+                {
+                  "pattern": "/serving-endpoints/databricks-gpt-oss-20b/invocations",
+                  "methods": [
+                    "POST"
+                  ],
+                  "_admits_flow": "M1-class-E"
+                }
+              ],
+              "patterns_are_derived": "Read off the selectors of the forwarding flows rather than written out again, so the allow-list cannot drift from the routes it admits (B-39).",
+              "must_be_last_because": "Flow policies in this definition are CUMULATIVE, not first-match: the live verification ran this policy at position 0 and M1's injection still happened. So position does not decide WHETHER this runs, it decides whether it runs BEFORE M3's explicit deny. First, it interrupts the legacy MCP request with an anonymous 403 and M3's mock never executes -- M3 becomes dead code, its reason never reaches the caller, and T-16 cannot attribute the refusal to the decision that is supposed to have produced it. Last, M3 answers in its own voice and this flow catches only what no flow claimed.",
+              "decides_on_path_only": "This policy matches the request PATH. It is not authorisation: it says nothing about who the caller is, and a 403 from it must not be cited as evidence that an unentitled caller was refused. Per-consumer entitlement on this route is unbuilt -- the plan is KEY_LESS (AI-1) -- so the only identity that reaches the upstream is the gateway's.",
+              "what_a_pass_does_not_mean": "That the estate is closed. This flow is on the AI API only. Every other API generated by scripts/29 still forwards unmatched paths, and is confined only by its target carrying a deep base path -- an accident of URL concatenation, not a control. B-48 stays OPEN until the sharing and storage APIs carry an equivalent and a test asserts it."
+            }
+          }
+        ],
+        "response": []
+      }
+    ],
+    "properties": [
+      {
+        "key": "databricks_upstream_token",
+        "value": "",
+        "encrypted": false,
+        "dynamic": false
+      }
+    ]
+  },
+  "plans": [
+    {
+      "name": "plan-ai-gateway",
+      "description": "KEY_LESS for the prototype. NOTE: with KEY_LESS the class E rate limit keys on the Authorization header, which this route REPLACES with the gateway's own -- so every consumer shares one bucket. policy-classes.yaml's key_note describes the per-credential problem; injection makes it a per-GATEWAY problem, which is worse and is not what \u00a72.3's per-consumer limits mean. Recorded as AI-1.",
+      "security": {
+        "type": "KEY_LESS"
+      },
+      "definitionVersion": "V4",
+      "validation": "AUTO",
+      "mode": "STANDARD",
+      "_rationale": {
+        "status_field_removed_2026_10_21": "Declared PUBLISHED in the create body. Publishing is a separate call; the field made the artifact assert an outcome it does not control."
+      }
+    }
+  ],
+  "_not_built": [
+    {
+      "id": "M2",
+      "reason": "METHODS_UNCONFIRMED_AND_TARGET_UNCONFIRMED",
+      "detail": "route-table M2 carries methods_unconfirmed: true -- \u00a72.3.2 gives the method as 'MCP', a protocol rather than an HTTP method. A POST-only selector would silently drop the streamable-HTTP event stream, which is the failure mode that looks like a working route. T-16 settles the methods; until then generating a selector would be guessing in a deployable artifact.",
+      "open_decision": "OD-8"
+    }
+  ],
+  "_known_incomplete": [
+    {
+      "id": "AI-1",
+      "what": "Rate limiting cannot be per-consumer on this route.",
+      "why": "Class E keys the limiter on the Authorization header and this route replaces that header with the gateway's single upstream identity, so all callers share one bucket. Per-consumer limits need an API-key or JWT plan, which the prototype does not have.",
+      "conops": "2.3 per-consumer limits; AC2"
+    },
+    {
+      "id": "AI-2",
+      "what": "R12b is unbuilt and untested.",
+      "why": "The gateway holds a long-lived credential. \u00a73.2's shape needs an OAuth client-credentials exchange or workload identity federation so the gateway holds nothing durable. That is a separate build and a separate test, and it is the half OD-4 cares about.",
+      "conops": "3.2; OD-4"
+    },
+    {
+      "id": "AI-3",
+      "what": "The credential is the wrong TYPE, not just the wrong scope.",
+      "why": "A PAT bound to a human operator carries that human's full entitlements. \u00a73.2's least-privilege claim rests on a service principal granted only one consumer's assets. Nothing in this build demonstrates least privilege, and a green T-15 must not be cited for it.",
+      "conops": "3.2; AC4"
+    },
+    {
+      "id": "AI-4",
+      "what": "M3's deny policy id and fields are unverified.",
+      "status": "CLOSED BY MEASUREMENT 2026-10-21 -- it was real.",
+      "why": "Unlike policy-classes.yaml's policies, policy-request-validation was not checked against this installation's schema endpoints. If it fails to load, the flow FORWARDS instead of refusing -- the dangerous direction -- and the upstream 404 would look like a successful block.",
+      "outcome": "B-19, kept in place. The risk above materialised, and not by the mechanism it predicted: the policy LOADED and forwarded anyway, because policy-request-validation validates each rule in turn and an empty `rules` list has nothing to fail. T-16 returned DENY_DOES_NOT_FIRE_THE_EDGE_FORWARDED_THE_REQUEST. The deny is now a `mock` policy whose fields were read from this installation's schema endpoint, and enforcement has moved to the terminal allow-list so a future failure of this policy falls closed.",
+      "what_caught_it": "Not the policy and not the gate. The TEST, because it required Gravitee's own vocabulary instead of accepting any 4xx. An assertion of `status in (401, 403)` would have passed on the upstream's forwarded 401 and this flow would have shipped as a working deny. Worth carrying into v1.6 as a rule about tests, not about policies.",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-7",
+      "what": "The AI route was an open reverse proxy to the whole Databricks workspace REST API. Fixed on this route; the same hole is open on every other API.",
+      "why": "Gravitee prefix-matches the context path and FORWARDS any path that matches no flow selector. This API's target must be the workspace root, so the forwarded path landed on the real REST API. Measured with a valid caller token: /ai-gateway-demo/api/2.0/token/list -> 200, clusters/list -> 200, serving-endpoints -> 200 -- and as the gateway's INJECTED identity, not the caller's, since this route replaces the caller's Authorization. R12a's mechanism is what made the hole worth using.",
+      "fix_on_this_route": "A terminal resource-filtering whitelist derived from the forwarding flows' own selectors, last in the flow array. Verified live before being generated.",
+      "still_open": "scripts/29's APIs have no equivalent. They are confined only because their endpoint target carries a deep base path, so a stray path appends and the upstream 404s -- confinement by URL concatenation, not by a control, and one target edit from being gone. No test asserts it.",
+      "conops": "2.3.2; AC1; AC2",
+      "baseline": "B-48",
+      "status": "OPEN for the estate -- v1.6 input",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-8",
+      "what": "\u00a72.3.2's route table was a documentation allow-list that nothing enforced.",
+      "why": "The table reads as the definitive statement of what each channel exposes, and every generator consumes it, but what the generators emitted were selectors that MATCH listed paths -- never a rule that refuses unlisted ones. A row absent from the table was therefore not absent from the gateway. scripts/29's build_catch_all asserted the opposite ('an unmatched path fails closed because nothing matches it'); that claim is retracted in place in that file.",
+      "conops": "2.3.2",
+      "baseline": "B-48",
+      "status": "OPEN -- v1.6 must say which document is the enforced boundary and which merely describes it",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-5",
+      "what": "M2 is not generated.",
+      "why": "methods_unconfirmed. \u00a72.3.2 gives 'MCP' as the method. A POST-only selector drops the streamable-HTTP event stream silently.",
+      "open_decision": "OD-8",
+      "tests": [
+        "T-16"
+      ]
+    },
+    {
+      "id": "AI-6",
+      "what": "The policy-classes.yaml readers are duplicated between scripts/29 and scripts/30, and the copies disagreed.",
+      "why": "Both filenames start with a digit, so neither module is importable by name; the second generator restated the schema rather than importing the reader. The restatement looked for a 'policies' key one level deeper than the file has, caught 2026-10-21 on first run. B-39 with my name on it.",
+      "why_it_mattered": "It crashed only because a list has no .get. A dict without the expected key would have returned an EMPTY policy set via `or []`, emitting the one credential-injecting route in the estate with no common controls -- and it would have imported, started and answered 200.",
+      "mitigation": "Empty is now a hard error in both readers in this script, so the silent-empty path no longer exists here. The duplication itself remains.",
+      "durable_fix": "Move the policy-classes readers into an importable module (scripts/lib/policy_classes.py) and have 29 and 30 both import it. Not done today: it touches a generator whose output T-01 and T-03 currently depend on, and the gates are green.",
+      "status": "OPEN -- v1.6 input",
+      "tests": []
+    }
+  ]
+}

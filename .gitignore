@@ -1,0 +1,24 @@
+.env
+# Any sidecar of .env -- backups, rotations, per-environment copies. A
+# .env.bak-* holding two live tokens existed on 2026-10-19 and this file
+# would NOT have ignored it; the hygiene gate caught it instead. The
+# same suffix blind spot already bit once before. .env.example is
+# re-allowed because it is the one committed template. B-22.
+.env.*
+!.env.example
+_secrets/
+*.pyc
+__pycache__/
+
+# Terraform. terraform.tfvars carries a workspace PAT, and tfstate
+# carries every value Terraform read -- including the token, in
+# cleartext, which is why the state file is ignored by name rather than
+# trusted to be clean. terraform.tfvars.example IS committed: it is the
+# template, and it holds placeholders only.
+iac/databricks/terraform.tfvars
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl

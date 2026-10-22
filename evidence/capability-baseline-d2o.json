@@ -1,0 +1,104 @@
+{
+  "endpoint": "http://localhost:8086/delta-sharing",
+  "share_path": "awoz_share.opensharing_test.test_dataset",
+  "checks": {
+    "shares": {
+      "status": 200,
+      "response": {
+        "items": [
+          {
+            "name": "awoz_share"
+          }
+        ]
+      },
+      "verdict": "WORKS",
+      "shares": [
+        "awoz_share"
+      ],
+      "means": "Delta Sharing protocol confirmed. Shares: ['awoz_share']"
+    },
+    "schemas": {
+      "status": 200,
+      "verdict": "WORKS",
+      "looked_for": "opensharing_test",
+      "response": {
+        "items": [
+          {
+            "name": "opensharing_test",
+            "share": "awoz_share"
+          }
+        ]
+      },
+      "means": "'opensharing_test' is published."
+    },
+    "tables": {
+      "status": 200,
+      "verdict": "WORKS",
+      "looked_for": "test_dataset",
+      "response": {
+        "items": [
+          {
+            "name": "test_dataset",
+            "schema": "opensharing_test",
+            "share": "awoz_share",
+            "id": "1543e8f0-b1b6-5dea-8efb-b4d5473b281f"
+          }
+        ]
+      },
+      "means": "'test_dataset' is published."
+    },
+    "query": {
+      "status": 200,
+      "verdict": "WORKS",
+      "file_count": 3,
+      "outbound_hosts": [
+        "objectstore"
+      ],
+      "protocol_lines": 5,
+      "means": "3 pre-signed file URL(s) returned across 5 protocol lines. Outbound hosts a consumer must reach: ['objectstore']. This is the T-20 capture. The PROCEDURE transfers to the client environment; these hostnames do not (CONOPS 2.4.3)."
+    },
+    "auth_refusal": {
+      "status": 401,
+      "verdict": "REFUSES",
+      "means": "HTTP 401 on a tampered token. Authentication is demonstrably enforced, so checks 1-4 are evidence of an authorised read rather than an open endpoint."
+    },
+    "presigned_get": {
+      "status": 200,
+      "host": "objectstore",
+      "verdict": "RETRIEVABLE",
+      "bytes": 1456,
+      "means": "1456 bytes of Parquet fetched from objectstore with no credential but the signature itself. End-to-end D2O read confirmed: discovery, signing and data transfer."
+    },
+    "presigned_put_refused": {
+      "status": 403,
+      "error_code": "SignatureDoesNotMatch",
+      "detail": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Error><Code>SignatureDoesNotMatch</Code><Message>The request signature we calculated does not match the signature you provided.</Message><Resource></Resource><RequestId>cdc4757dad49bb40c651</RequestId></Error>",
+      "verdict": "REFUSES_WRITE",
+      "means": "HTTP 403 on a write to the same URL that just served a read. This is half of T-21's evidence: the URL appears signed for GET only, so the recipient's read-only position would be enforced by the signature rather than by a mount option on our side of the boundary. NOT YET ATTRIBUTED -- check 8 is what rules out a store that refuses every pre-signed write regardless of method."
+    },
+    "put_signed_control": {
+      "endpoint_signed_against": "http://objectstore:8000",
+      "bucket": "awoz-opensharing",
+      "scratch_key": "_t21_method_binding_control/probe.bin",
+      "deviation_from_check_7": "Different object key (a scratch key, not the shared Parquet file). Writing to the real data file would corrupt the Delta table. Store authorization does not vary by key within a bucket, so the comparison holds.",
+      "control_signature_version": "SigV4",
+      "recipient_signature_version": "SigV4",
+      "status": 200,
+      "verdict": "CONTROL_PASSES",
+      "means": "HTTP 200. A PUT-signed URL for the same store, bucket and endpoint is ACCEPTED, with no Authorization header -- exactly as the GET-signed URL was in check 6. So this store does serve pre-signed writes, and check 7's refusal is attributable to the SIGNED METHOD rather than to a blanket refusal of writes. T-21's read-only claim is now isolated to the protocol property: the provider signs with HttpMethod.GET, the method is covered by the signature, and a recipient cannot promote a read URL into a write.",
+      "cleanup": "scratch object deleted"
+    }
+  },
+  "summary": {
+    "shares": "WORKS",
+    "schemas": "WORKS",
+    "tables": "WORKS",
+    "query": "WORKS",
+    "auth_refusal": "REFUSES",
+    "presigned_get": "RETRIEVABLE",
+    "presigned_put_refused": "REFUSES_WRITE",
+    "put_signed_control": "CONTROL_PASSES"
+  },
+  "t21_strength": "PROTOCOL_LEVEL",
+  "conclusion": "T-20/T-21/T-23 provider confirmed: protocol, discovery, data access, authentication, retrievability, and recipient-side read-only demonstrated AND attributed to the signed method by a passing PUT-signed control."
+}

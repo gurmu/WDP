@@ -1,0 +1,20 @@
+databricks-sdk>=0.30.0
+delta-sharing>=1.1.0
+pandas>=2.0.0
+requests>=2.31.0
+
+# Task 1.3: writes real Delta tables for the D2O provider with no Spark
+# and no JVM (delta-rs). Install with --break-system-packages on Ubuntu.
+deltalake>=0.18
+
+# Task 1.3: creates the object-storage bucket the provider reads from,
+# and clears it on --force. Object storage is mandatory, not optional --
+# the Delta Sharing server cannot serve a file:// table (docs/11 B-8).
+# The table itself is written by delta-rs, not by this.
+boto3>=1.34.0
+
+# E1 Task 1.3: reads iac/config/*.yaml so the CaC invariants are asserted
+# by scripts/22_check_cac_config.py rather than by eye. The generators
+# still EMIT yaml by hand (small files, reviewable diffs); this is for
+# reading them back.
+pyyaml>=6.0

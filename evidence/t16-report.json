@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "T-16",
+    "description": "Legacy managed MCP denied, and unclaimed paths refused",
+    "expected": "No unclaimed workspace path reaching the upstream with a caller token, every refusal attributed to a NAMED policy; those paths alive again with the allow-list disabled and no other change; M3's marker appearing in that same state, proving the backstop is live rather than dead configuration; the path forwarded with both off, proving it was routable all along; and the perimeter demonstrably back, by name, after restore",
+    "actual": "PERIMETER_CLOSED_M3_IS_THE_BACKSTOP_SUBJECT_ABSENT_UPSTREAM",
+    "passed": true,
+    "date": "2026-10-21T21:02:51.168322Z",
+    "evidence_ref": "evidence/t16-mcp-deny.json"
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "T-02",
+    "description": "Direct call to the Databricks sharing endpoint is refused by the recipient IP access list",
+    "expected": "DENIED with the operator excluded, SUCCESS with the operator included (same credential, grant, share and client)",
+    "actual": "ENFORCED_MECHANISM_PROVEN: phase1=SETTLED_AS_EXPECTED, phase2=SETTLED_AS_EXPECTED",
+    "passed": true,
+    "date": "2026-10-21T13:41:31.551691Z",
+    "evidence_ref": "evidence/t02-direct-refusal.json"
+  }
+]

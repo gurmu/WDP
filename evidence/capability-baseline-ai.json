@@ -1,0 +1,77 @@
+{
+  "probe": "unity-ai-gateway",
+  "task": "E1 Task 1.9",
+  "run_at": "2026-10-18T09:35:14-0400",
+  "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+  "console_observation_2026_10_18": {
+    "gateway_page": "/ml/ai-gateway",
+    "tabs": [
+      "Models",
+      "Providers",
+      "MCPs",
+      "Skills",
+      "Agents"
+    ],
+    "governed_models_seen": 13,
+    "location_of_most": "system.ai",
+    "tokens_7d_all_models": 0,
+    "note": "surface confirmed by eye; this script confirms behaviour"
+  },
+  "steps": {
+    "list_serving_endpoints": {
+      "status": 200,
+      "count": 12,
+      "sample": [
+        "databricks-gpt-oss-120b",
+        "databricks-gpt-oss-20b",
+        "databricks-qwen3-next-80b-a3b-instruct",
+        "databricks-qwen35-122b-a10b",
+        "databricks-gemma-3-12b",
+        "databricks-gte-large-en",
+        "databricks-bge-large-en",
+        "databricks-meta-llama-3-1-8b-instruct",
+        "databricks-meta-llama-3-3-70b-instruct",
+        "databricks-qwen3-embedding-0-6b",
+        "databricks-llama-4-maverick",
+        "databricks-deepseek-v4-flash-0731"
+      ],
+      "verdict": "OK -- surface is automatable"
+    },
+    "mcp_surface": {
+      "probes": {
+        "/api/2.0/mcp/servers": {
+          "status": 404,
+          "body": "{'error_code': 'ENDPOINT_NOT_FOUND', 'message': \"No API found for 'GET /mcp/servers'\", 'details': [{'@type': 'type.googleapis.com/google.rpc.RequestInfo', 'request_id': '201ea3a6-ebbb-4c79-911b-823ffbf25253', 'serving_data': ''}]}"
+        },
+        "/api/2.1/unity-catalog/mcp-servers": {
+          "status": 404,
+          "body": "{'error_code': 'ENDPOINT_NOT_FOUND', 'message': \"No API found for 'GET /unity-catalog/mcp-servers'\", 'details': [{'@type': 'type.googleapis.com/google.rpc.RequestInfo', 'request_id': 'db6c550f-3245-46e0-a70c-2f6a4d5d1e57', 'serving_data': ''}]}"
+        }
+      },
+      "note": "A 404/405 here does not mean 'no MCP' -- the console tab may be backed by a different path. Record what the MCPs tab shows by eye alongside this. Note also that /api/2.0/mcp/* is the LEGACY route that route M3 must prove unreachable from the Gravitee edge; reaching it directly with a workspace token is expected and is not a failure of M3."
+    },
+    "invocation": {
+      "attempted": [
+        {
+          "model": "databricks-gpt-oss-20b",
+          "status": 200,
+          "body": "{'id': 'chatcmpl_968bb109-545e-40e4-8069-fd7155a3d115_0364629d-bdd6-42ac-974d-fb350cc77dc7', 'object': 'chat.completion', 'created': 1792330516, 'model': 'gpt-oss-20b-080525', 'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': [{'type': 'reasoning', 'summary': [{'type': 'summary_text', 'text': 'The user says: \"Reply with the single word: ok\".'}]}]}, 'finish_reason': 'length', 'lo"
+        }
+      ],
+      "conclusion": {
+        "verdict": "WORKS",
+        "model": "databricks-gpt-oss-20b",
+        "means": "T-15 availability is settled. Build the Gravitee M1 route (Task 1.9 part 2)."
+      }
+    },
+    "usage_accounting_lead": {
+      "status": "manual",
+      "try_in_sql": [
+        "SHOW TABLES IN system.serving",
+        "SELECT * FROM system.serving.endpoint_usage LIMIT 5",
+        "SHOW SCHEMAS IN system"
+      ],
+      "why": "Not a solution to 1694-E4's correlation-ID contract. But if any of these return rows, the AI routes have a usage record the Delta Sharing routes lack, and Epic 5 gains a second join key to test. Report rows or report nothing."
+    }
+  }
+}

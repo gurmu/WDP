@@ -1,0 +1,166 @@
+{
+  "test": "T-21",
+  "epic": "E1",
+  "task": "1.8",
+  "ac": "AC1",
+  "run_at": "2026-10-21T14:21:22.264783Z",
+  "conops_claims_under_test": [
+    "\u00a76 ARB principle: read-only by construction",
+    "\u00a76 ARB principle: token-misuse reduction"
+  ],
+  "defect_history": [
+    {
+      "finding": "B-40",
+      "retracted_verdict": "NO_WRITE_VERB_ON_THE_SHARING_SURFACE",
+      "retracted_on": "2026-10-21",
+      "first_reported": "2026-10-21, first run of this test",
+      "what_was_wrong": "The share, schema and table were taken from command-line DEFAULTS naming awoz1227-psp7-demo-share, while the credential selector chose awoz1227-psp7-t2-us-recipient, which is granted awoz1227-psp7-t2-us-share instead. All seven mutations went to a share the recipient holds no grant on, all seven returned 404, and 404 was classified METHOD_ABSENT. The verdict therefore rested on seven 'no such share for you' responses.",
+      "why_the_control_missed_it": "The control was read_as_recipient, which grades /shares answering as DISCOVERY_ONLY, and DISCOVERY_ONLY was accepted. /shares answering proves the host and the credential work; it proves nothing about the path being mutated. A control has to be the SAME PATH, not the same host.",
+      "fix": "discover_readable_target() descends the recipient's own grants to an object whose GET returns 200, and the mutations target that object. Defaults were removed; an explicit override is verified readable before use.",
+      "class": "\u00a712.9's silent negative with the sign flipped -- a test passing without touching the mechanism it names"
+    }
+  ],
+  "halves": {
+    "A": {
+      "half": "A -- read-only by construction",
+      "run_at": "2026-10-21T14:21:22.282996Z",
+      "target_discovery": {
+        "steps": {
+          "shares": {
+            "status": 200,
+            "granted": [
+              "awoz1227-psp7-t2-us-share"
+            ]
+          },
+          "object_get": {
+            "path": "/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us/metadata",
+            "status": 200
+          }
+        },
+        "verdict": "TARGET_READABLE",
+        "share": "awoz1227-psp7-t2-us-share",
+        "schema": "opensharing_test",
+        "table": "v_entitled_t2_us",
+        "control_path": "/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us/metadata"
+      },
+      "share": "awoz1227-psp7-t2-us-share",
+      "schema": "opensharing_test",
+      "table": "v_entitled_t2_us",
+      "control_path": "/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us/metadata",
+      "control_status": 200,
+      "attempts": [
+        {
+          "verb": "POST",
+          "path": "/shares",
+          "sent_body": true,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can create a share on the provider's metastore",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'POST /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"6cdf51d5-5c52-46d8-9d79-48e1f10d7cf8\",\"serving_data\":\"\"}]}"
+        },
+        {
+          "verb": "DELETE",
+          "path": "/shares/awoz1227-psp7-t2-us-share",
+          "sent_body": false,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can delete the share it was granted",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'DELETE /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares/awoz1227-psp7-t2-us-share'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"21598063-c96a-4c12-b4c2-1b05c22272d8\",\"serving_data\":\"\"}]}"
+        },
+        {
+          "verb": "PUT",
+          "path": "/shares/awoz1227-psp7-t2-us-share",
+          "sent_body": true,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can rewrite the share object",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'PUT /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares/awoz1227-psp7-t2-us-share'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"74fa9655-94e3-4b18-8aeb-57a09bddb21b\",\"serving_data\":\"\"}]}"
+        },
+        {
+          "verb": "PATCH",
+          "path": "/shares/awoz1227-psp7-t2-us-share",
+          "sent_body": true,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can amend the share object",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'PATCH /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares/awoz1227-psp7-t2-us-share'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"9f1ed8f5-1330-4e79-95e7-aece395d97dd\",\"serving_data\":\"\"}]}"
+        },
+        {
+          "verb": "POST",
+          "path": "/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables",
+          "sent_body": true,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can add a table to the shared schema",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'POST /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"0a41ec19-a3b3-4ad7-a2d9-2543fc2fc3bd\",\"serving_data\":\"\"}]}"
+        },
+        {
+          "verb": "DELETE",
+          "path": "/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us",
+          "sent_body": false,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can remove a table from the share",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'DELETE /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"7498d59d-4405-4640-b85f-b45aab1b5f97\",\"serving_data\":\"\"}]}"
+        },
+        {
+          "verb": "PUT",
+          "path": "/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us/metadata",
+          "sent_body": true,
+          "http_status": 404,
+          "classification": "METHOD_ABSENT",
+          "a_2xx_would_mean": "a recipient can rewrite the shared table's metadata",
+          "response_excerpt": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'PUT /opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938/shares/awoz1227-psp7-t2-us-share/schemas/opensharing_test/tables/v_entitled_t2_us/metadata'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"c5e0ccca-0e32-4ba4-bb30-a66f97a484b6\",\"serving_data\":\"\"}]}"
+        }
+      ],
+      "verdict": "NO_WRITE_VERB_ON_THE_SHARING_SURFACE",
+      "conops_implication": "\u00a76's 'read-only by construction' is supported, and by the stronger of the two available readings: no mutation verb is part of this surface, so there is no write control to misconfigure. The positive control is what makes this attributable rather than a dead-endpoint artefact."
+    },
+    "B": {
+      "half": "B -- would a credential leave this repository",
+      "run_at": "2026-10-21T14:21:25.161708Z",
+      "scan_source": "GIT_INDEX_PLUS_EVIDENCE",
+      "files_scanned": 93,
+      "hits": [],
+      "positive_control": {
+        "synthetic_written": "evidence/_t21_synthetic_probe_DELETE_ME.json",
+        "patterns_fired": [
+          "bearer_token_key",
+          "share_credentials_profile",
+          "sharing_host_with_opaque_neighbour"
+        ],
+        "verdict": "SCANNER_PROVEN",
+        "synthetic_removed": true
+      },
+      "verdict": "NO_CREDENTIAL_SHAPE_IN_SHIPPABLE_FILES"
+    }
+  },
+  "credential_selection": {
+    "considered": [
+      {
+        "recipient": "psp7-demo-recipient",
+        "ip_access_list_mode": "NOT_APPLIED_BY_DESIGN",
+        "credential_on_disk": true,
+        "expiration_time": "2026-10-22T08:59:42.516Z",
+        "usable": true
+      },
+      {
+        "recipient": "awoz1227-psp7-t2-us-recipient",
+        "ip_access_list_mode": "NOT_APPLIED_BY_DESIGN",
+        "credential_on_disk": true,
+        "expiration_time": "2026-10-28T06:27:34.962Z",
+        "usable": true
+      },
+      {
+        "recipient": "awoz1227-t02-iplist-recipient",
+        "ip_access_list_mode": "APPLIED",
+        "credential_on_disk": true,
+        "expiration_time": "2026-10-28T06:27:35.615Z",
+        "excluded_because": "an applied IP access list would make every refusal ambiguous between the network and the protocol"
+      }
+    ],
+    "chosen": "awoz1227-psp7-t2-us-recipient",
+    "chosen_because": "longest-lived credential with no applied IP list"
+  },
+  "verdict": "READ_ONLY_AND_NO_LEAK_BOTH_MEASURED"
+}

@@ -1,0 +1,1299 @@
+{
+  "definitionVersion": "V4",
+  "type": "PROXY",
+  "listeners": [
+    {
+      "type": "HTTP",
+      "paths": [
+        {
+          "path": "/opensharing-demo/psp7-demo/",
+          "overrideAccess": false
+        }
+      ],
+      "pathMappings": [],
+      "requestValidation": {
+        "rejectNullByte": true
+      },
+      "entrypoints": [
+        {
+          "type": "http-proxy",
+          "qos": "AUTO"
+        }
+      ],
+      "servers": []
+    }
+  ],
+  "endpointGroups": [
+    {
+      "name": "sharing-endpoint-psp7-demo",
+      "type": "http-proxy",
+      "loadBalancer": {
+        "type": "ROUND_ROBIN"
+      },
+      "endpoints": [
+        {
+          "name": "sharing-endpoint",
+          "type": "http-proxy",
+          "weight": 1,
+          "inheritConfiguration": false,
+          "configuration": {
+            "target": "https://13ad6c00-c648-44ba-85c3-5bdb52f6a53e.opensharing.us-east-2.cloud.databricks.com/api/2.0/opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938"
+          },
+          "services": {},
+          "secondary": false,
+          "tenants": []
+        }
+      ],
+      "services": {}
+    }
+  ],
+  "analytics": {
+    "enabled": true
+  },
+  "flowExecution": {
+    "mode": "DEFAULT",
+    "matchRequired": false
+  },
+  "flows": [
+    {
+      "id": "d15ab51c-8b12-431c-9ab5-1c8b12a31ce3",
+      "name": "S1-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "012a28f8-5748-4121-aa28-f85748712185",
+      "name": "S2-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "95792e02-bbb5-41b5-b92e-02bbb501b567",
+      "name": "S3-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "947f3bca-8d6c-40e3-bf3b-ca8d6c00e31f",
+      "name": "S4-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas/:schema/tables",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "0eca7681-b08a-49c7-8a76-81b08ab9c7ed",
+      "name": "S5-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/all-tables",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "7b9fb604-5a54-4da9-9fb6-045a54bda9a4",
+      "name": "S6-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas/:schema/tables/:table/version",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "885e1733-24d5-4645-9e17-3324d586450b",
+      "name": "S7-class-A",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas/:schema/tables/:table/metadata",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 60,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 5,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "27b85cc8-8b19-4d79-b85c-c88b194d791c",
+      "name": "S8-class-B",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas/:schema/tables/:table/query",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "POST"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 20,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 2,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        },
+        {
+          "name": "Request schema validation",
+          "enabled": true,
+          "policy": "json-validation",
+          "configuration": {
+            "schema": "{\"type\":\"object\",\"additionalProperties\":true}",
+            "returnDetailedErrorReport": false,
+            "scope": "REQUEST_CONTENT"
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "88fbdce9-7fdb-4f33-bbdc-e97fdb3f332e",
+      "name": "S9-class-B",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas/:schema/tables/:table/changes",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 20,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 2,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        },
+        {
+          "name": "Request schema validation",
+          "enabled": true,
+          "policy": "json-validation",
+          "configuration": {
+            "schema": "{\"type\":\"object\",\"additionalProperties\":true}",
+            "returnDetailedErrorReport": false,
+            "scope": "REQUEST_CONTENT"
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "d9d9f22b-07dc-468b-99f2-2b07dc268b4a",
+      "name": "S10-class-C",
+      "enabled": true,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/shares/:share/schemas/:schema/tables/:table/temporary-table-credentials",
+          "pathOperator": "EQUALS",
+          "methods": [
+            "POST"
+          ]
+        }
+      ],
+      "request": [
+        {
+          "name": "Require bearer token present",
+          "enabled": true,
+          "policy": "policy-assign-attributes",
+          "configuration": {
+            "scope": "REQUEST",
+            "attributes": [
+              {
+                "name": "has-bearer",
+                "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Inject correlation ID",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "addHeaders": [
+              {
+                "name": "X-Correlation-Id",
+                "value": "{#request.id}"
+              }
+            ],
+            "scope": "REQUEST"
+          }
+        },
+        {
+          "name": "CIDR allow-list (agency IP ranges)",
+          "description": "CONOPS 3.1 - IP allow-listing. DISABLED for this recipient by design.",
+          "enabled": false,
+          "policy": "ip-filtering",
+          "configuration": {
+            "lookupIpVersion": "ALL",
+            "whitelistIps": [],
+            "useCustomIPAddress": false
+          }
+        },
+        {
+          "name": "Rate limit (per-consumer quota)",
+          "enabled": true,
+          "policy": "rate-limit",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "rate": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 10,
+              "periodTimeUnit": "MINUTES",
+              "key": "{#request.headers['Authorization']}"
+            },
+            "errorStrategy": "FALLBACK_PASS_TROUGH"
+          }
+        },
+        {
+          "name": "Spike arrest (burst protection)",
+          "enabled": true,
+          "policy": "spike-arrest",
+          "configuration": {
+            "async": false,
+            "addHeaders": false,
+            "errorStrategy": "FALLBACK_PASS_TROUGH",
+            "spike": {
+              "useKeyOnly": false,
+              "periodTime": 1,
+              "limit": 1,
+              "periodTimeUnit": "SECONDS",
+              "key": ""
+            }
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Header redaction",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Databricks-Org-Id",
+              "X-Databricks-Request-Id",
+              "Server",
+              "Via",
+              "server-timing",
+              "x-request-id",
+              "X-Gravitee-Request-Id",
+              "X-Gravitee-Transaction-Id"
+            ]
+          }
+        },
+        {
+          "name": "Header redaction (storage identifiers)",
+          "enabled": true,
+          "policy": "transform-headers",
+          "configuration": {
+            "scope": "REQUEST",
+            "removeHeaders": [
+              "X-Amz-Request-Id",
+              "X-Amz-Id-2"
+            ]
+          }
+        }
+      ],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    },
+    {
+      "id": "1ad896ea-fcc4-420c-9896-eafcc4b20c3b",
+      "name": "X-catch-all-deny",
+      "enabled": false,
+      "selectors": [
+        {
+          "type": "HTTP",
+          "path": "/",
+          "pathOperator": "STARTS_WITH",
+          "methods": []
+        }
+      ],
+      "request": [],
+      "response": [],
+      "subscribe": [],
+      "publish": [],
+      "entrypointConnect": [],
+      "interact": [],
+      "tags": []
+    }
+  ],
+  "allowedInApiProducts": true,
+  "allowMultiJwtOauth2Subscriptions": false,
+  "id": "faa46526-db4d-44aa-a465-26db4d94aab2",
+  "name": "AWOZ-1227 E1 Sharing -- psp7-demo-recipient",
+  "description": "Channel E-1 egress route for recipient psp7-demo-recipient. GENERATED by scripts/29_gen_gravitee_route_family.py from route-table.yaml, policy-classes.yaml, recipients.yaml and this recipient's own issued credential endpoint. Do not edit by hand -- regenerate. One route per recipient because the sharing host is per-recipient and the platform validates the host/token binding (docs/11 B-42, docs/10 D-9).",
+  "apiVersion": "1.5.0-generated",
+  "deployedAt": "2026-10-22T06:59:53.558Z",
+  "createdAt": "2026-10-21T16:18:01.207Z",
+  "updatedAt": "2026-10-22T06:59:53.558Z",
+  "disableMembershipNotifications": false,
+  "groups": [],
+  "state": "STARTED",
+  "deploymentState": "DEPLOYED",
+  "visibility": "PRIVATE",
+  "labels": [],
+  "lifecycleState": "CREATED",
+  "tags": [],
+  "primaryOwner": {
+    "id": "715e0b73-efb9-4e1c-9e0b-73efb94e1c1d",
+    "displayName": "admin",
+    "type": "USER"
+  },
+  "categories": [],
+  "originContext": {
+    "origin": "MANAGEMENT"
+  },
+  "definitionContext": {
+    "origin": "MANAGEMENT",
+    "mode": "FULLY_MANAGED",
+    "syncFrom": "MANAGEMENT"
+  },
+  "responseTemplates": {},
+  "resources": [],
+  "properties": [],
+  "_links": {
+    "pictureUrl": "http://localhost:8083/management/v2/environments/DEFAULT/apis/faa46526-db4d-44aa-a465-26db4d94aab2/picture?hash=1792652393558",
+    "backgroundUrl": "http://localhost:8083/management/v2/environments/DEFAULT/apis/faa46526-db4d-44aa-a465-26db4d94aab2/background?hash=1792652393558"
+  }
+}

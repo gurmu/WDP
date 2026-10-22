@@ -1,0 +1,646 @@
+{
+  "script": "scripts/27_build_recipient_model.py",
+  "task": "E1 Task 1.5",
+  "generated_at": "2026-10-22T07:37:20.828999Z",
+  "config": "iac/config/recipients.yaml",
+  "mode": "APPLY",
+  "open_decision": {
+    "id": "OD-5",
+    "status": "OPEN_NOT_DECIDED_HERE",
+    "built_branch": "BEARER_TOKEN",
+    "means": "Every policy number in this run is a prototype default labelled as one. Nothing here decides OD-5."
+  },
+  "token_policy_applied": {
+    "lifetime_days": 7,
+    "overlap_seconds": 86400,
+    "status": "PROTOTYPE_DEFAULT_NOT_POLICY"
+  },
+  "pre_apply_guards": {
+    "grant_targets": [
+      {
+        "recipient": "psp7-demo-recipient",
+        "share": "awoz1227-psp7-demo-share",
+        "declared_in_entitlements_yaml": true
+      },
+      {
+        "recipient": "awoz1227-psp7-t2-us-recipient",
+        "share": "awoz1227-psp7-t2-us-share",
+        "declared_in_entitlements_yaml": true
+      },
+      {
+        "recipient": "awoz1227-t02-iplist-recipient",
+        "share": "awoz1227-psp7-demo-share",
+        "declared_in_entitlements_yaml": true
+      }
+    ],
+    "grants_to_shares_not_in_entitlements_yaml": [],
+    "verdict": "ALL_GRANT_TARGETS_DEFINED",
+    "means": "A grant to a share the entitlement model does not define would be a hole with no column list behind it. Checked before anything is applied."
+  },
+  "recipients_applied": [
+    {
+      "recipient": "psp7-demo-recipient",
+      "declared_exists_already": true,
+      "found_on_platform": true,
+      "patch_http_status": 200,
+      "verdict": "UPDATED",
+      "recipient_after": {
+        "name": "psp7-demo-recipient",
+        "authentication_type": "TOKEN",
+        "owner": "temari.app@gmail.com",
+        "comment": "AWOZ-1227 | channel=D2O | purpose=CDAO PSP7 egress demo -- column scope | dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+        "created_at": 1792250517799,
+        "created_by": "temari.app@gmail.com",
+        "updated_at": 1792654641570,
+        "updated_by": "temari.app@gmail.com",
+        "full_name": "psp7-demo-recipient",
+        "securable_type": "RECIPIENT",
+        "tokens": [
+          {
+            "id": "bb97a5ff-8397-4362-8767-920e487dde9c",
+            "created_at": 1792573182514,
+            "created_by": "temari.app@gmail.com",
+            "expiration_time": 1792659582516,
+            "updated_at": 1792573182516,
+            "updated_by": "temari.app@gmail.com",
+            "activation_pending": false
+          }
+        ],
+        "ip_access_list_allowed": null,
+        "fields_dropped_unread": [
+          "id",
+          "properties_kvpairs",
+          "securable_kind",
+          "secure_connect_enablement"
+        ]
+      }
+    },
+    {
+      "recipient": "awoz1227-psp7-t2-us-recipient",
+      "declared_exists_already": false,
+      "found_on_platform": true,
+      "exists_already_drift": "config says exists_already=False, platform says True",
+      "patch_http_status": 200,
+      "verdict": "UPDATED",
+      "recipient_after": {
+        "name": "awoz1227-psp7-t2-us-recipient",
+        "authentication_type": "TOKEN",
+        "owner": "temari.app@gmail.com",
+        "comment": "AWOZ-1227 | channel=D2O | purpose=CDAO PSP7 egress demo -- column AND row scope | dsa_ref=DSA-AWOZ-1227-PSP7-002 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+        "created_at": 1792564055950,
+        "created_by": "temari.app@gmail.com",
+        "updated_at": 1792654642187,
+        "updated_by": "temari.app@gmail.com",
+        "full_name": "awoz1227-psp7-t2-us-recipient",
+        "securable_type": "RECIPIENT",
+        "tokens": [
+          {
+            "id": "b0fa2d86-857e-469e-9a76-a37dad333d25",
+            "created_at": 1792564055959,
+            "created_by": "temari.app@gmail.com",
+            "expiration_time": 1793168854962,
+            "updated_at": 1792564055962,
+            "updated_by": "temari.app@gmail.com",
+            "activation_pending": false
+          }
+        ],
+        "ip_access_list_allowed": null,
+        "fields_dropped_unread": [
+          "id",
+          "properties_kvpairs",
+          "securable_kind",
+          "secure_connect_enablement"
+        ]
+      }
+    },
+    {
+      "recipient": "awoz1227-t02-iplist-recipient",
+      "declared_exists_already": false,
+      "found_on_platform": true,
+      "exists_already_drift": "config says exists_already=False, platform says True",
+      "patch_http_status": 200,
+      "verdict": "UPDATED",
+      "recipient_after": {
+        "name": "awoz1227-t02-iplist-recipient",
+        "authentication_type": "TOKEN",
+        "owner": "temari.app@gmail.com",
+        "comment": "AWOZ-1227 | channel=D2O | purpose=\u00a73.1 defense in depth -- the recipient that exists to be DENIED. | dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+        "created_at": 1792564056604,
+        "created_by": "temari.app@gmail.com",
+        "updated_at": 1792654642865,
+        "updated_by": "temari.app@gmail.com",
+        "full_name": "awoz1227-t02-iplist-recipient",
+        "securable_type": "RECIPIENT",
+        "tokens": [
+          {
+            "id": "7cd1724a-3f15-43c5-9065-bb12168b361a",
+            "created_at": 1792564056612,
+            "created_by": "temari.app@gmail.com",
+            "expiration_time": 1793168855615,
+            "updated_at": 1792564056615,
+            "updated_by": "temari.app@gmail.com",
+            "activation_pending": false
+          }
+        ],
+        "ip_access_list_allowed": [
+          "203.0.113.5/32"
+        ],
+        "fields_dropped_unread": [
+          "id",
+          "properties_kvpairs",
+          "securable_kind",
+          "secure_connect_enablement"
+        ]
+      }
+    }
+  ],
+  "grants_applied": [
+    {
+      "recipient": "psp7-demo-recipient",
+      "share": "awoz1227-psp7-demo-share",
+      "privileges": [
+        "SELECT"
+      ],
+      "http_status": 200,
+      "verdict": "GRANTED"
+    },
+    {
+      "recipient": "awoz1227-psp7-t2-us-recipient",
+      "share": "awoz1227-psp7-t2-us-share",
+      "privileges": [
+        "SELECT"
+      ],
+      "http_status": 200,
+      "verdict": "GRANTED"
+    },
+    {
+      "recipient": "awoz1227-t02-iplist-recipient",
+      "share": "awoz1227-psp7-demo-share",
+      "privileges": [
+        "SELECT"
+      ],
+      "http_status": 200,
+      "verdict": "GRANTED"
+    }
+  ],
+  "rotation": {
+    "recipient": "psp7-demo-recipient",
+    "http_status": 200,
+    "overlap_seconds_requested": 3600,
+    "verdict": "ROTATED",
+    "secret_written_to": "_secrets/recipient-psp7-demo-recipient-rotated.json",
+    "recipient_after": {
+      "name": "psp7-demo-recipient",
+      "authentication_type": "TOKEN",
+      "owner": "temari.app@gmail.com",
+      "comment": "AWOZ-1227 | channel=D2O | purpose=CDAO PSP7 egress demo -- column scope | dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+      "created_at": 1792250517799,
+      "created_by": "temari.app@gmail.com",
+      "updated_at": 1792654641570,
+      "updated_by": "temari.app@gmail.com",
+      "full_name": "psp7-demo-recipient",
+      "securable_type": "RECIPIENT",
+      "tokens": [
+        {
+          "id": "bb97a5ff-8397-4362-8767-920e487dde9c",
+          "created_at": 1792573182514,
+          "created_by": "temari.app@gmail.com",
+          "expiration_time": 1792658244250,
+          "updated_at": 1792654644250,
+          "updated_by": "temari.app@gmail.com",
+          "activation_pending": false
+        },
+        {
+          "id": "dedebbe9-2386-4077-945e-fc191fbb2a0a",
+          "created_at": 1792654644257,
+          "created_by": "temari.app@gmail.com",
+          "expiration_time": 1792741044260,
+          "updated_at": 1792654644260,
+          "updated_by": "temari.app@gmail.com",
+          "activation_pending": true
+        }
+      ],
+      "ip_access_list_allowed": null,
+      "fields_dropped_unread": [
+        "id",
+        "properties_kvpairs",
+        "securable_kind",
+        "secure_connect_enablement"
+      ]
+    },
+    "note": "A NEW activation link exists in that file. The old credential is expected to keep working for the overlap window -- expected, not measured. T-10 measures it (RKI-2).",
+    "overlap_source": "--rotate-overlap-seconds on the command line, overriding the configured 86400s"
+  },
+  "verify": {
+    "rule1_existence": {
+      "rule": "RI-1 recipient exists with declared authentication_type",
+      "rows": [
+        {
+          "recipient": "psp7-demo-recipient",
+          "declared_type": "TOKEN",
+          "actual_type": "TOKEN",
+          "verdict": "EXISTS_TYPE_MATCHES"
+        },
+        {
+          "recipient": "awoz1227-psp7-t2-us-recipient",
+          "declared_type": "TOKEN",
+          "actual_type": "TOKEN",
+          "verdict": "EXISTS_TYPE_MATCHES"
+        },
+        {
+          "recipient": "awoz1227-t02-iplist-recipient",
+          "declared_type": "TOKEN",
+          "actual_type": "TOKEN",
+          "verdict": "EXISTS_TYPE_MATCHES"
+        }
+      ],
+      "bad": [],
+      "cannot_see": [],
+      "verdict": "ALL_PRESENT_TYPES_MATCH",
+      "means": "The authentication type IS the OD-5 branch. A TOKEN recipient silently created as DATABRICKS would move every credential conclusion to the other channel."
+    },
+    "rule2_ip_lists": {
+      "rule": "RI-2 IP access list equals the declared one, both directions",
+      "rows": [
+        {
+          "recipient": "psp7-demo-recipient",
+          "declared_mode": "NOT_APPLIED_BY_DESIGN",
+          "declared": [],
+          "actual": [],
+          "verdict": "ABSENT_AS_DECLARED"
+        },
+        {
+          "recipient": "awoz1227-psp7-t2-us-recipient",
+          "declared_mode": "NOT_APPLIED_BY_DESIGN",
+          "declared": [],
+          "actual": [],
+          "verdict": "ABSENT_AS_DECLARED"
+        },
+        {
+          "recipient": "awoz1227-t02-iplist-recipient",
+          "declared_mode": "APPLIED",
+          "declared": [
+            "203.0.113.5/32"
+          ],
+          "actual": [
+            "203.0.113.5/32"
+          ],
+          "verdict": "LIST_MATCHES"
+        }
+      ],
+      "bad": [],
+      "cannot_see": [],
+      "verdict": "IP_LISTS_AS_DECLARED"
+    },
+    "rule3_grants": {
+      "rule": "RI-3 grants are exactly as declared, metastore-wide, for every principal and not only the declared ones",
+      "shares_examined": 4,
+      "shares_unreadable": [],
+      "observed": {
+        "psp7-demo-recipient": {
+          "awoz1227-psp7-demo-share": [
+            "SELECT"
+          ]
+        },
+        "awoz1227-t02-iplist-recipient": {
+          "awoz1227-psp7-demo-share": [
+            "SELECT"
+          ]
+        },
+        "awoz1227-psp7-t2-us-recipient": {
+          "awoz1227-psp7-t2-us-share": [
+            "SELECT"
+          ]
+        }
+      },
+      "missing": [],
+      "mismatched": [],
+      "extra": [],
+      "pruned": [],
+      "prune_requested": false,
+      "unmanaged_principals_with_grants": [
+        {
+          "principal": "awoz1227_demo_recipientashu",
+          "shares": {
+            "awoz1227_demo_share1ashu": [
+              "SELECT"
+            ]
+          },
+          "shares_also_managed_by_this_config": [],
+          "state": "NO_TOKEN",
+          "authentication_type": "TOKEN",
+          "reachability": "DORMANT_NO_LIVE_CREDENTIAL"
+        },
+        {
+          "principal": "awoz1227_p18_primary_recipient",
+          "shares": {
+            "awoz1227_p18_primary_share": [
+              "SELECT"
+            ]
+          },
+          "shares_also_managed_by_this_config": [],
+          "state": "NO_TOKEN",
+          "authentication_type": "DATABRICKS",
+          "reachability": "DORMANT_NO_LIVE_CREDENTIAL"
+        }
+      ],
+      "unmanaged_principals_reachable": [],
+      "verdict": "DECLARED_GRANTS_EXACT_UNMANAGED_GRANTS_DORMANT",
+      "means": "Scoped to the metastore on BOTH axes. B-31 widened the share search; B-33 widened the principal search. A grant held by a recipient this config does not manage was previously filtered out by a rule whose stated job is 'grants are exactly as declared' -- the omission made the rule's name false. Nothing unmanaged is removed: an EXTRA grant on a MANAGED recipient needs --prune-grants, and a grant on an unmanaged principal is reported only, because this config does not own that principal and two writers of one object is the hazard."
+    },
+    "rule4_tokens": {
+      "rule": "RI-4 token count within the platform bound; configured lifetime within the documented year",
+      "configured_lifetime_days": 7,
+      "configured_lifetime_within_documented_max": true,
+      "documented_max_days": 365,
+      "documented_max_status": "DOCUMENTED_NOT_MEASURED",
+      "documented_max_note": "Asserting our number against a bound we did not measure. The measurement is a year long.",
+      "lifetime_is_a_birth_property": {
+        "behaviour": "expiration_time is set on CREATE and is NOT re-sent on UPDATE.",
+        "because": "An applier that re-stamped the lifetime on every run would extend every credential by the full window each time it ran, which converts a time-bounded control into an unbounded one for any environment where the applier runs regularly. Idempotent configuration and a bounded credential lifetime pull in opposite directions here, and silently extending is the worse of the two failures because nothing looks wrong.",
+        "consequence": "Lifetime drift is REPORTED per recipient (lifetime_verdict) and changed only under --renew-lifetime."
+      },
+      "rows": [
+        {
+          "recipient": "psp7-demo-recipient",
+          "token_count": 2,
+          "token_count_within_platform_bound": true,
+          "state": "ACTIVATED_WITH_LIVE_TOKEN",
+          "state_means": "A credential exists in somebody's hands right now. A grant to this recipient is a read, not a risk of one.",
+          "tokens_live": [
+            {
+              "id": "bb97a5ff-8397-4362-8767-920e487dde9c",
+              "created_at": "2026-10-21T08:59:42.514000Z",
+              "expiration_time": "2026-10-22T08:37:24.250000Z",
+              "expired": false
+            }
+          ],
+          "tokens_expired": [],
+          "tokens_activation_pending": [
+            {
+              "id": "dedebbe9-2386-4077-945e-fc191fbb2a0a",
+              "created_at": "2026-10-22T07:37:24.257000Z",
+              "expiration_time": "2026-10-23T07:37:24.260000Z",
+              "expired": false,
+              "activation_pending": true
+            }
+          ],
+          "configured_window_seconds": 604800,
+          "observed_token_windows_seconds": [
+            85062,
+            86400
+          ],
+          "lifetime_verdict": "LIFETIME_DIFFERS_SET_AT_BIRTH",
+          "lifetime_means": "This recipient's token window is not the configured one. The applier sets expiration_time on CREATE and deliberately does not touch it on UPDATE, so the difference persists and is reported rather than corrected. Use --renew-lifetime to change it on purpose."
+        },
+        {
+          "recipient": "awoz1227-psp7-t2-us-recipient",
+          "token_count": 1,
+          "token_count_within_platform_bound": true,
+          "state": "ACTIVATED_WITH_LIVE_TOKEN",
+          "state_means": "A credential exists in somebody's hands right now. A grant to this recipient is a read, not a risk of one.",
+          "tokens_live": [
+            {
+              "id": "b0fa2d86-857e-469e-9a76-a37dad333d25",
+              "created_at": "2026-10-21T06:27:35.959000Z",
+              "expiration_time": "2026-10-28T06:27:34.962000Z",
+              "expired": false
+            }
+          ],
+          "tokens_expired": [],
+          "tokens_activation_pending": [],
+          "configured_window_seconds": 604800,
+          "observed_token_windows_seconds": [
+            604799
+          ],
+          "lifetime_verdict": "LIFETIME_AS_CONFIGURED"
+        },
+        {
+          "recipient": "awoz1227-t02-iplist-recipient",
+          "token_count": 1,
+          "token_count_within_platform_bound": true,
+          "state": "ACTIVATED_WITH_LIVE_TOKEN",
+          "state_means": "A credential exists in somebody's hands right now. A grant to this recipient is a read, not a risk of one.",
+          "tokens_live": [
+            {
+              "id": "7cd1724a-3f15-43c5-9065-bb12168b361a",
+              "created_at": "2026-10-21T06:27:36.612000Z",
+              "expiration_time": "2026-10-28T06:27:35.615000Z",
+              "expired": false
+            }
+          ],
+          "tokens_expired": [],
+          "tokens_activation_pending": [],
+          "configured_window_seconds": 604800,
+          "observed_token_windows_seconds": [
+            604799
+          ],
+          "lifetime_verdict": "LIFETIME_AS_CONFIGURED"
+        }
+      ],
+      "bad": [],
+      "cannot_see": [],
+      "verdict": "WITHIN_BOUNDS"
+    },
+    "rule5_dsa_refs": {
+      "rule": "RI-5 DSA reference and its placeholder status are carried on the recipient, read back",
+      "rows": [
+        {
+          "recipient": "psp7-demo-recipient",
+          "dsa_ref": "DSA-AWOZ-1227-PSP7-001",
+          "dsa_ref_status": "PLACEHOLDER",
+          "comment_read_back": "AWOZ-1227 | channel=D2O | purpose=CDAO PSP7 egress demo -- column scope | dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+          "verdict": "DSA_REF_CARRIED_WITH_STATUS"
+        },
+        {
+          "recipient": "awoz1227-psp7-t2-us-recipient",
+          "dsa_ref": "DSA-AWOZ-1227-PSP7-002",
+          "dsa_ref_status": "PLACEHOLDER",
+          "comment_read_back": "AWOZ-1227 | channel=D2O | purpose=CDAO PSP7 egress demo -- column AND row scope | dsa_ref=DSA-AWOZ-1227-PSP7-002 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+          "verdict": "DSA_REF_CARRIED_WITH_STATUS"
+        },
+        {
+          "recipient": "awoz1227-t02-iplist-recipient",
+          "dsa_ref": "DSA-AWOZ-1227-PSP7-001",
+          "dsa_ref_status": "PLACEHOLDER",
+          "comment_read_back": "AWOZ-1227 | channel=D2O | purpose=\u00a73.1 defense in depth -- the recipient that exists to be DENIED. | dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) | defined_by=iac/config/recipients.yaml",
+          "verdict": "DSA_REF_CARRIED_WITH_STATUS"
+        }
+      ],
+      "bad": [],
+      "cannot_see": [],
+      "verdict": "ALL_CARRIED",
+      "means": "\u00a73.3 purpose limitation. The status is inside the same string so a placeholder cannot be quoted as an executed agreement reference."
+    },
+    "rule6_inventory": {
+      "rule": "RI-6 unmanaged recipients inventoried with reachability",
+      "policy": "INVENTORY_AND_REPORT_NEVER_DELETE",
+      "recipients_on_metastore": 5,
+      "managed_by_this_config": [
+        "awoz1227-psp7-t2-us-recipient",
+        "awoz1227-t02-iplist-recipient",
+        "psp7-demo-recipient"
+      ],
+      "rows": [
+        {
+          "recipient": "awoz1227_demo_recipientashu",
+          "declared_as_known_leftover": true,
+          "state": "NO_TOKEN",
+          "reachability": "DORMANT_NO_LIVE_CREDENTIAL",
+          "has_ip_access_list": false,
+          "authentication_type": "TOKEN"
+        },
+        {
+          "recipient": "awoz1227_p18_primary_recipient",
+          "declared_as_known_leftover": true,
+          "state": "NO_TOKEN",
+          "reachability": "DORMANT_NO_LIVE_CREDENTIAL",
+          "has_ip_access_list": false,
+          "authentication_type": "DATABRICKS"
+        }
+      ],
+      "undeclared_leftovers": [],
+      "reachable_now": [],
+      "verdict": "LEFTOVERS_ALL_DECLARED_AND_DORMANT",
+      "means": "Nothing here is deleted. A dormant leftover is not a finding; one nobody is counting is how it becomes one (B-31). A leftover that is REACHABLE_NOW is a different claim and is named separately."
+    },
+    "rule7_share_isolation": {
+      "rule": "\u00a73.1 share isolation -- per-use-case recipients, by channel",
+      "conops_text": "\u00a73.1: \"one recipient per consuming agency or use case\".",
+      "token_recipients_coexisting": [
+        "awoz1227-psp7-t2-us-recipient",
+        "awoz1227-t02-iplist-recipient",
+        "psp7-demo-recipient"
+      ],
+      "token_recipient_count": 3,
+      "d2o_per_use_case_recipients": "AVAILABLE_MEASURED",
+      "d2d_per_use_case_recipients": "REFUSED_MEASURED_B29",
+      "d2d_evidence": "docs/11 \u00a711.7 B-29; the error names the OTHER recipient",
+      "verdict": "ISOLATION_RULE_DIFFERS_BY_CHANNEL_MEASURED",
+      "means": "Two TOKEN recipients coexist for one logical consumer, so \u00a73.1's 'one recipient per consuming agency OR USE CASE' is satisfiable per use case on D2O and refused per use case on D2D. One sentence, two answers, and the CONOPS does not split it by channel.",
+      "conops_action": "\u00a73.1 needs splitting by channel. As written it is a single sentence that is true for D2O and false for D2D, which is the worst shape for a control statement: whoever implements the D2D half will read it, try it, and get an error naming an object they did not touch."
+    },
+    "rule8_revocation": {
+      "rule": "OD5-4 revocation triggers name operations that exist",
+      "scope": "STATIC -- no call is made; nothing is revoked",
+      "rows": [
+        {
+          "trigger": "DSA expiry or termination",
+          "enforcement": "DELETE recipient",
+          "api": "DELETE /recipients/{name}",
+          "verdict": "ENFORCEABLE"
+        },
+        {
+          "trigger": "Credential suspected compromised",
+          "enforcement": "rotate-token with existing_token_expire_in_seconds=0",
+          "api": "POST /recipients/{name}/rotate-token",
+          "verdict": "ENFORCEABLE"
+        },
+        {
+          "trigger": "Consuming agency's point of contact changes",
+          "enforcement": "review, no automatic action",
+          "api": "NOT_AN_API_CALL_BY_DESIGN",
+          "verdict": "ENFORCEABLE"
+        },
+        {
+          "trigger": "Purpose change not covered by the DSA",
+          "enforcement": "revoke the SHARE grant, keep the recipient",
+          "api": "PATCH /shares/{share}/permissions  changes[].remove",
+          "verdict": "ENFORCEABLE"
+        }
+      ],
+      "verdict": "ALL_TRIGGERS_ENFORCEABLE",
+      "means": "Checked because a revocation path is only tested on the worst day. Rotation with expire=0 is the compromise path and is NOT exercised here -- RKI-2."
+    }
+  },
+  "apply_outcome": {
+    "per_recipient": {
+      "psp7-demo-recipient": "UPDATED",
+      "awoz1227-psp7-t2-us-recipient": "UPDATED",
+      "awoz1227-t02-iplist-recipient": "UPDATED"
+    },
+    "grants": [
+      "GRANTED",
+      "GRANTED",
+      "GRANTED"
+    ],
+    "failed_or_blocked": [],
+    "verdict": "APPLIED",
+    "means": "Every statement succeeded."
+  },
+  "model_conformance": {
+    "rules": {
+      "rule1_existence": "ALL_PRESENT_TYPES_MATCH",
+      "rule2_ip_lists": "IP_LISTS_AS_DECLARED",
+      "rule3_grants": "DECLARED_GRANTS_EXACT_UNMANAGED_GRANTS_DORMANT",
+      "rule4_tokens": "WITHIN_BOUNDS",
+      "rule5_dsa_refs": "ALL_CARRIED"
+    },
+    "cannot_see": [],
+    "diverged": [],
+    "verdict": "CONFORMS",
+    "scope": "What this config declares, compared against what the platform holds. Rules 1-5."
+  },
+  "environment_inventory": {
+    "rule6": "LEFTOVERS_ALL_DECLARED_AND_DORMANT",
+    "undeclared_leftovers": [],
+    "leftovers_reachable_now": [],
+    "unmanaged_principals_with_grants": [
+      "awoz1227_demo_recipientashu",
+      "awoz1227_p18_primary_recipient"
+    ],
+    "unmanaged_principals_reachable": [],
+    "verdict": "UNMANAGED_OBJECTS_PRESENT_AND_DORMANT",
+    "scope": "What else is on the metastore. Separate from conformance because an object this config does not manage is not evidence that the model it does manage is wrong -- and because the opposite error, letting it disappear into a green model verdict, is how B-31 happened.",
+    "policy": "Reported, never deleted (B-19)."
+  },
+  "verdict": "MODEL_VERIFIED_PROVIDER_SIDE_ENVIRONMENT_NOT_CLEAN",
+  "verdict_scope": "PROVIDER-SIDE ONLY, exactly as Task 1.4's was. Nothing here is a consumer-side read. RKI-1: no Delta Sharing client has used any of these credentials in this run, so 'the recipient sees only the entitled columns and rows' is NOT a claim this evidence supports.",
+  "known_incomplete": [
+    {
+      "id": "RKI-1",
+      "scope": "the consumer's read",
+      "statement": "Everything scripts/27 checks is provider-side, exactly as Task 1.4 was. It proves a recipient exists, carries a grant, carries a DSA reference and has the declared perimeter. It does NOT prove that a Delta Sharing client holding the issued credential sees the entitled columns and rows and nothing else.",
+      "closes_when": "Task 1.7 reads through the credential and asserts the absent column and the 16-row scope from the client side.",
+      "owner": "E1 Task 1.7 (T-04)"
+    },
+    {
+      "id": "RKI-2",
+      "scope": "rotation and overlap",
+      "statement": "OD5-3's overlap window is configured and unexercised. No token has been rotated, so \"the old credential keeps working for 24h\" is a setting, not an observation.",
+      "closes_when": "T-10 runs.",
+      "owner": "E3"
+    },
+    {
+      "id": "RKI-3",
+      "scope": "the IP access list's enforcement",
+      "statement": "\u00a711.3 measured that an IP access list can be SET and is echoed back. That is a configuration read, not an enforcement test. No request has ever been denied by one here.",
+      "closes_when": "The two-phase t02_procedure above runs, producing both the allowed read and the denied read.",
+      "owner": "E1 Task 1.6 (T-02, T-03)"
+    },
+    {
+      "id": "RKI-5",
+      "scope": "the credential Task 1.7 needs",
+      "statement": "Two of the three recipients hold a token in ACTIVATION_PENDING -- the link exists and has not been exchanged, so no client can read yet. The third, psp7-demo-recipient, holds no token at all. No credential in this model is live.",
+      "consequence": "\"A recipient holds a grant\" and \"a recipient can read\" are different claims and only the first is currently true. Every provider-side verdict in evidence/recipient-model.json is compatible with nobody being able to read anything, which is exactly what RKI-1 means and why the verdict says PROVIDER_SIDE.",
+      "closes_when": "The activation links in _secrets/ are exchanged for credential files, and psp7-demo-recipient is rotated to mint one.",
+      "owner": "E1 Task 1.6 / 1.7"
+    },
+    {
+      "id": "RKI-6",
+      "scope": "the perimeter's topology, as distinct from its mechanism",
+      "statement": "T-02's production shape is an allow-list holding the GATEWAY's egress address, so that a direct call from anywhere else is refused. On this machine the gateway runs beside the test client and both leave through the same NAT address, so an IP allow-list cannot tell \"via the gateway\" from \"direct\" here. The MECHANISM is testable -- admit, then refuse, the same read -- and the TOPOLOGY is not, at any number of phases.",
+      "consequence": "AC1's direct-call refusal rests on an infrastructure assumption the CONOPS never states: that the gateway egresses from an address the recipient allow-list can name, and that no consumer can reach the sharing endpoint from an address on it. On a single-host deployment that assumption is false, and a T-02 reporting a pass without separating the two halves would carry it silently into v1.6.",
+      "measured_by": "tests/t02_ip_access_list.py phase 1b -- with the list holding only the operator's address, a successful read THROUGH the gateway shows the two addresses are the same one.",
+      "closes_when": "NEVER_LOCALLY for the topology half. It closes in a deployment where the gateway's egress address differs from any consumer's, at which point T-02 should be rebuilt around the gateway's address rather than the operator's. The deliverable here is the CONOPS sentence, not the test.",
+      "owner": "E1 Task 1.6 (the finding); Platform Security (the assumption)"
+    },
+    {
+      "id": "RKI-4",
+      "scope": "the approval gate",
+      "statement": "OD5-5 is answered \"the operator is also the approver\", which is an honest description of a one-person prototype and not a demonstration of \u00a73.4.1's provisioning separation.",
+      "closes_when": "NEVER_LOCALLY",
+      "owner": "Data Governance"
+    }
+  ]
+}

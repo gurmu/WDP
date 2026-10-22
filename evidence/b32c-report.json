@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "B-32c",
+    "description": "A changed view definition reaches the live consumer",
+    "expected": "the consumer-side row count moving when the row predicate is widened, and returning to its original value when the predicate is put back -- three reads through the share, one variable",
+    "actual": "B32C_CONFIRMED_PROVIDER_MOVED_CONSUMER_DID_NOT_WITHIN_600S",
+    "passed": false,
+    "date": "2026-10-22T07:20:09.438592Z",
+    "evidence_ref": "evidence/b32c-change-propagation.json"
+  }
+]

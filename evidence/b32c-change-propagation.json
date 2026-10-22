@@ -1,0 +1,317 @@
+{
+  "finding": "B-32c",
+  "test": "B-32c change propagation",
+  "epic_task": "E1 Task 1.4 (remaining gap)",
+  "ac": "AC6 / T-12 -- redeploy the configuration from code",
+  "at": "2026-10-22T07:20:09.438238Z",
+  "subject": {
+    "view": "opensharing_test.v_entitled_t2_us",
+    "share": "awoz1227-psp7-t2-us-share",
+    "recipient": "awoz1227-psp7-t2-us-recipient",
+    "credential_expires": "2026-10-28T06:27:34.962Z",
+    "shipped_predicate": "region = 'us-east'",
+    "widened_predicate": "region IN ('us-east', 'us-west')"
+  },
+  "counts": {
+    "phase_0_consumer": 16,
+    "phase_1_consumer": 16,
+    "phase_2_consumer": 16,
+    "phase_0_provider": 16,
+    "phase_1_provider": 33
+  },
+  "phases": {
+    "0_as_shipped": {
+      "phase": "0_as_shipped",
+      "predicate": "region = 'us-east'",
+      "expectation": "the baseline count; whatever it is, phase 2 must return to it",
+      "applier_returncode": 0,
+      "applier_tail": "\n  apply:   APPLIED\n  VERDICT: ENTITLEMENT_MODEL_VERIFIED_PROVIDER_SIDE\n  Wrote evidence/entitlement-model.json\n\nNext: python3 scripts/25_gen_databricks_tf.py   (same config -> Terraform, for AC6 / T-12)",
+      "provider_side_row_count": 16,
+      "consumer_samples": [
+        {
+          "label": "0_as_shipped@0.0s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 0.0
+        }
+      ],
+      "consumer_side": {
+        "label": "0_as_shipped@0.0s",
+        "verdict": "ROWS_COUNTED",
+        "rows_counted": 16,
+        "file_actions": 1,
+        "file_actions_without_numrecords": 0,
+        "cannot_see_because": null,
+        "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+        "elapsed_s": 0.0
+      },
+      "consumer_row_count": 16,
+      "consumer_polled_for_s": 0.0,
+      "consumer_poll_budget_s": 0.0
+    },
+    "1_widened": {
+      "phase": "1_widened",
+      "predicate": "region IN ('us-east', 'us-west')",
+      "expectation": "the consumer count must INCREASE. A provider count that moves while the consumer count does not is B-32c confirmed as a real defect.",
+      "applier_returncode": 0,
+      "applier_tail": "\n  apply:   APPLIED\n  VERDICT: ENTITLEMENT_MODEL_VERIFIED_PROVIDER_SIDE\n  Wrote evidence/entitlement-model.json\n\nNext: python3 scripts/25_gen_databricks_tf.py   (same config -> Terraform, for AC6 / T-12)",
+      "provider_side_row_count": 33,
+      "consumer_samples": [
+        {
+          "label": "1_widened@0.0s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 0.0
+        },
+        {
+          "label": "1_widened@33.1s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 33.1
+        },
+        {
+          "label": "1_widened@65.6s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 65.6
+        },
+        {
+          "label": "1_widened@99.4s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 99.4
+        },
+        {
+          "label": "1_widened@132.3s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 132.3
+        },
+        {
+          "label": "1_widened@165.1s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 165.1
+        },
+        {
+          "label": "1_widened@197.3s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 197.3
+        },
+        {
+          "label": "1_widened@230.5s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 230.5
+        },
+        {
+          "label": "1_widened@263.2s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 263.2
+        },
+        {
+          "label": "1_widened@296.2s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 296.2
+        },
+        {
+          "label": "1_widened@328.4s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 328.4
+        },
+        {
+          "label": "1_widened@361.2s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 361.2
+        },
+        {
+          "label": "1_widened@393.7s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 393.7
+        },
+        {
+          "label": "1_widened@426.6s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 426.6
+        },
+        {
+          "label": "1_widened@459.3s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 459.3
+        },
+        {
+          "label": "1_widened@491.8s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 491.8
+        },
+        {
+          "label": "1_widened@524.6s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 524.6
+        },
+        {
+          "label": "1_widened@557.0s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 557.0
+        },
+        {
+          "label": "1_widened@590.5s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 590.5
+        }
+      ],
+      "consumer_side": {
+        "label": "1_widened@590.5s",
+        "verdict": "ROWS_COUNTED",
+        "rows_counted": 16,
+        "file_actions": 1,
+        "file_actions_without_numrecords": 0,
+        "cannot_see_because": null,
+        "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+        "elapsed_s": 590.5
+      },
+      "consumer_row_count": 16,
+      "consumer_polled_for_s": 593.2,
+      "consumer_poll_budget_s": 600.0,
+      "expected_to_differ_from": 16,
+      "consumer_moved": false,
+      "consumer_moved_after_s": null,
+      "consumer_did_not_move_within_s": 593.2
+    },
+    "2_restored": {
+      "phase": "2_restored",
+      "predicate": "region = 'us-east'",
+      "expectation": "the consumer count must return to phase 0's. This is what shows the count tracks the config rather than drifting.",
+      "applier_returncode": 0,
+      "applier_tail": "\n  apply:   APPLIED\n  VERDICT: ENTITLEMENT_MODEL_VERIFIED_PROVIDER_SIDE\n  Wrote evidence/entitlement-model.json\n\nNext: python3 scripts/25_gen_databricks_tf.py   (same config -> Terraform, for AC6 / T-12)",
+      "provider_side_row_count": 16,
+      "consumer_samples": [
+        {
+          "label": "2_restored@0.0s",
+          "verdict": "ROWS_COUNTED",
+          "rows_counted": 16,
+          "file_actions": 1,
+          "file_actions_without_numrecords": 0,
+          "cannot_see_because": null,
+          "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+          "elapsed_s": 0.0
+        }
+      ],
+      "consumer_side": {
+        "label": "2_restored@0.0s",
+        "verdict": "ROWS_COUNTED",
+        "rows_counted": 16,
+        "file_actions": 1,
+        "file_actions_without_numrecords": 0,
+        "cannot_see_because": null,
+        "read_by": "tests/t04_column_denied.py::count_rows_from_query",
+        "elapsed_s": 0.0
+      },
+      "consumer_row_count": 16,
+      "consumer_polled_for_s": 0.0,
+      "consumer_poll_budget_s": 600.0
+    }
+  },
+  "verdict": "B32C_CONFIRMED_PROVIDER_MOVED_CONSUMER_DID_NOT_WITHIN_600S",
+  "what_this_closes": "Nothing. B-32c stays open with this verdict attached.",
+  "why_three_phases": "Two phases would show the number moved, not that it moved BECAUSE of the change. A count read twice against a live platform can differ for uninteresting reasons. 16 -> 33 -> 16 against narrow -> wide -> narrow is tracking the config; 16 -> 33 alone is not.",
+  "what_this_does_not_prove": {
+    "propagation_latency": "RETRACTED AND REPLACED (B-19, in place). The first version of this entry said the consumer read happens immediately after the applier returns, and treated that as showing propagation was 'fast enough to be invisible'. That was written before the first run, and the first run contradicted it: the consumer count did NOT move immediately. A single immediate read cannot tell a propagation delay from a propagation failure -- it returns the same number for both -- so the test now polls and reports the wait. What is still NOT bounded above is the general case: this measures ONE view on ONE free-tier metastore. T-19's >170.8s was a newly SHARED OBJECT, a different operation from a changed DEFINITION on an already-shared one, and v1.6 should not generalise either number to the other.",
+    "the_mechanism_of_the_delay": "Not identified. A wait that ends is consistent with several causes -- a cached share manifest, the provider-side view not being re-resolved until the next query plan, a CDN or metadata TTL in front of the sharing endpoint -- and this test distinguishes none of them. It measures that the change arrives and roughly when, which is what the access matrix needs; naming the cause would need provider-side instrumentation the free tier does not expose.",
+    "column_changes": "Only the row predicate moved. A changed `select` list is the other half of the model and is untested for propagation -- deliberately, because moving both at once would leave the test unable to say which one propagated.",
+    "scale": "One view, 50 rows, one parquet file. The counts come from file statistics, so a view large enough to span many files exercises a code path this run does not.",
+    "t12": "Still NOT_RUN. This shows a CHANGE reaching a consumer on a live metastore; it says nothing about building the model on a CLEAN target, which is what AC6 asks and what this topology has no way to provide."
+  }
+}

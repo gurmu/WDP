@@ -1,0 +1,138 @@
+{
+  "generated_by": "scripts/29_gen_gravitee_route_family.py",
+  "generated_at": "2026-10-21T20:34:24.437762Z",
+  "conops": "AWOZ-1227 v1.5 \u00a72.3.2 channel E-1",
+  "epic": "E2 Task 2.1, borrowed into E1 Task 1.6",
+  "shape": "ROUTE_FAMILY_ONE_API_PER_RECIPIENT",
+  "shape_because": "The sharing endpoint hostname is per-recipient and the platform validates the host/token binding: 400 BAD_REQUEST 'Request URL hostname ... does not match with the recipient id ...'. \u00a72.3.2's single route with a single upstream target cannot be built. docs/11 B-42, docs/10 D-9.",
+  "inputs": {
+    "iac/config/route-table.yaml": "701e8f0c46ec",
+    "iac/config/policy-classes.yaml": "1776ec999fcd",
+    "iac/config/recipients.yaml": "c4cf6654996b"
+  },
+  "input_hashes_are_for": "T-12's 'redeploy from code to a clean target -> same configuration'. Same input hashes plus same generator version must yield byte-identical definitions, which is what makes the redeploy claim checkable rather than asserted.",
+  "family": [
+    {
+      "slug": "psp7-demo",
+      "recipient": "psp7-demo-recipient",
+      "definition": "gravitee/generated/api-e1-psp7-demo.json",
+      "edge_path": "/opensharing-demo/psp7-demo",
+      "upstream_host": "13ad6c00-c648-44ba-85c3-5bdb52f6a53e.opensharing.us-east-2.cloud.databricks.com",
+      "upstream_base_path": "/api/2.0/opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938",
+      "flows": 11,
+      "credential_expires": "2026-10-22T08:59:42.516Z",
+      "grants": [
+        "awoz1227-psp7-demo-share"
+      ],
+      "dsa_ref": "DSA-AWOZ-1227-PSP7-001",
+      "dsa_ref_status": "PLACEHOLDER",
+      "ip_access_list_mode": "NOT_APPLIED_BY_DESIGN",
+      "not_built": [
+        {
+          "route_id": "S10",
+          "warning": "PATH_UNCONFIRMED",
+          "detail": "This flow is generated onto a CANDIDATE path. If the path is wrong the selector matches nothing, the request falls to the catch-all, and the refusal will look like an edge control working. Do not report a refusal on this route as enforcement until the path is settled.",
+          "settled_by": "E2 Task 2.3"
+        }
+      ]
+    },
+    {
+      "slug": "psp7-t2-us",
+      "recipient": "awoz1227-psp7-t2-us-recipient",
+      "definition": "gravitee/generated/api-e1-psp7-t2-us.json",
+      "edge_path": "/opensharing-demo/psp7-t2-us",
+      "upstream_host": "aa8b5b00-e4e4-4977-85b3-45b693ab87be.opensharing.us-east-2.cloud.databricks.com",
+      "upstream_base_path": "/api/2.0/opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938",
+      "flows": 11,
+      "credential_expires": "2026-10-28T06:27:34.962Z",
+      "grants": [
+        "awoz1227-psp7-t2-us-share"
+      ],
+      "dsa_ref": "DSA-AWOZ-1227-PSP7-002",
+      "dsa_ref_status": "PLACEHOLDER",
+      "ip_access_list_mode": "NOT_APPLIED_BY_DESIGN",
+      "not_built": [
+        {
+          "route_id": "S10",
+          "warning": "PATH_UNCONFIRMED",
+          "detail": "This flow is generated onto a CANDIDATE path. If the path is wrong the selector matches nothing, the request falls to the catch-all, and the refusal will look like an edge control working. Do not report a refusal on this route as enforcement until the path is settled.",
+          "settled_by": "E2 Task 2.3"
+        }
+      ]
+    },
+    {
+      "slug": "t02-iplist",
+      "recipient": "awoz1227-t02-iplist-recipient",
+      "definition": "gravitee/generated/api-e1-t02-iplist.json",
+      "edge_path": "/opensharing-demo/t02-iplist",
+      "upstream_host": "a7066515-4fb1-43af-8bb3-d89cb4635809.opensharing.us-east-2.cloud.databricks.com",
+      "upstream_base_path": "/api/2.0/opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938",
+      "flows": 11,
+      "credential_expires": "2026-10-28T06:27:35.615Z",
+      "grants": [
+        "awoz1227-psp7-demo-share"
+      ],
+      "dsa_ref": "DSA-AWOZ-1227-PSP7-001",
+      "dsa_ref_status": "PLACEHOLDER",
+      "ip_access_list_mode": "APPLIED",
+      "not_built": [
+        {
+          "route_id": "S10",
+          "warning": "PATH_UNCONFIRMED",
+          "detail": "This flow is generated onto a CANDIDATE path. If the path is wrong the selector matches nothing, the request falls to the catch-all, and the refusal will look like an edge control working. Do not report a refusal on this route as enforcement until the path is settled.",
+          "settled_by": "E2 Task 2.3"
+        }
+      ]
+    }
+  ],
+  "unresolved": [],
+  "retired": {
+    "gravitee/api-definition.json": {
+      "status": "SUPERSEDED -- CARRIED FORWARD, NOT DELETED (B-19)",
+      "sha12": "156f6d1fda4b",
+      "superseded_because": "Its upstream target https://<DATABRICKS_HOST>/api/2.0/delta-sharing is wrong twice: wrong HOST (the workspace host is not the sharing host) and wrong PATH (no issued credential contains /api/2.0/delta-sharing; the real path is /api/2.0/opensharing/metastores/<id>). This is the better explanation for T-01 never having produced a read through the gateway.",
+      "what_it_still_contributes": "Its policy identifiers and configuration field names were verified against this installation's own plugins/policies schema endpoints. That verification is carried into policy-classes.yaml, which is why the file is superseded rather than discarded.",
+      "retire_in_gravitee_by": "RETRACTED 2026-10-21, before anyone acted on it. The live API at /opensharing-demo/ must be stopped, its plans closed, and the API DELETED BEFORE the family is imported.",
+      "retire_in_gravitee_by_superseded_text": "The two live APIs (/opensharing-demo/ and /delta-sharing/) must be stopped and deleted AFTER the family imports and T-01 passes, not before -- deleting the old route first removes the only working comparison.",
+      "retire_in_gravitee_by_retracted_because": "Three observations, each sufficient on its own. (1) SEQUENCING: a Gravitee context path is a PREFIX, so the existing API at /opensharing-demo/ COLLIDES with every /opensharing-demo/<slug> listener in this family. The old API does not merely survive the import -- it BLOCKS it. On the 2026-10-21 run only the F1 storage proxy imported, because /storage-proxy/ was the one path with no collision. (2) The 'only working comparison' did not exist. That API has flows: 0 -- no perimeter policies at all -- and its upstream is pinned to the sharing host of a credential that EXPIRED 2026-10-18, so it cannot produce a successful read for any recipient and never could. It has been an unpoliced pass-through to a dead host. (3) Worse than useless: because it prefix-matches, it ANSWERED this family's paths by forwarding them upstream with the recipient slug glued into the protocol path, producing Databricks 404s that read like gateway refusals. That is B-44, and this sentence is what kept the blocking object alive long enough to cause it.",
+      "retraction_note": "Carried in place rather than edited away (B-19). The wrong advice was mine, it was specific, and it was the kind that gets followed."
+    }
+  },
+  "known_incomplete": [
+    {
+      "id": "RF-1",
+      "what": "The deny catch-all (route X) is emitted disabled.",
+      "because": "policy-classes.yaml PC-4: terminal-deny policy shape unconfirmed.",
+      "today": "Unmatched paths fail closed because nothing matches them -- right outcome, by accident not decision."
+    },
+    {
+      "id": "RF-2",
+      "what": "Class B's json-validation runs the permissive fallback.",
+      "because": "iac/gravitee/schemas/query-body.schema.json does not exist (PC-1).",
+      "consequence": "T-06 can only return CANNOT_SEE against this build."
+    },
+    {
+      "id": "RF-3",
+      "what": "F1 forwarding is disabled; S8/S9 URL rewrite is NOT_BUILT.",
+      "because": "No verified ndjson-aware body-rewrite policy, and no static storage target.",
+      "consequence": "T-08 records the OD-1 fallback, not a proxied download."
+    },
+    {
+      "id": "RF-4",
+      "what": "T-07's expanded removeHeaders list is a hypothesis.",
+      "because": "Four header names were added after a measured leak and have not been re-tested."
+    },
+    {
+      "id": "RF-5",
+      "what": "GAP-ICEBERG has no route, so /iceberg still falls to the catch-all.",
+      "because": "route-table.yaml records it as an OPEN decision for E2, not a route.",
+      "consequence": "The rewritten credential's icebergEndpoint points at an edge path that matches nothing."
+    },
+    {
+      "id": "RF-6",
+      "what": "One API per recipient makes recipient onboarding a gateway change.",
+      "because": "D-9. \u00a73.4's self-service portal (AC4) assumed adding a recipient was a form submission.",
+      "consequence": "AC4's acceptance text needs rewording in v1.6, or the portal needs to call this generator."
+    }
+  ]
+}

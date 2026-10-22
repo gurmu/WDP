@@ -1,0 +1,481 @@
+{
+  "test": "T-16",
+  "epic_task": "E1 Task 1.9 part 4",
+  "open_decision": "OD-8 (half)",
+  "at": "2026-10-21T21:02:51.167824Z",
+  "subject": {
+    "routes": [
+      "M3",
+      "X (terminal allow-list)"
+    ],
+    "edge_url": "http://localhost:8082/ai-gateway-demo/api/2.0/mcp/servers",
+    "direct_url": "https://dbc-0c6ebc56-563d.cloud.databricks.com/api/2.0/mcp/servers",
+    "api": {
+      "id": "2b2663a8-45a5-4d69-a663-a845a58d6928",
+      "name": "AWOZ-1227 E3 AI Gateway"
+    },
+    "m3_attribution_marker": "AWOZ-1227-M3-LEGACY-MCP-DENIED-AT-THE-EDGE",
+    "allow_list_flows": [
+      "X-terminal-allow-list"
+    ],
+    "edge_base_provenance": "DERIVED_FROM_GATEWAY_EDGE_URL"
+  },
+  "control_b_run": true,
+  "phases": {
+    "0_upstream_existence": {
+      "label": "direct_with_real_pat",
+      "url": "https://dbc-0c6ebc56-563d.cloud.databricks.com/api/2.0/mcp/servers",
+      "authorization_header_sent": true,
+      "status": 404,
+      "responder": {
+        "round_trip_headers": false,
+        "vocabulary": "UPSTREAM",
+        "responder": "UPSTREAM_DIRECT_OR_HEADERS_STRIPPED",
+        "meaning": "Upstream vocabulary with no round-trip headers. Either this was not proxied, or the header sanitizer removed the evidence of the round trip -- which would mean T-07's policy is destroying attribution. Both are worth knowing; neither is assumed."
+      },
+      "body": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'GET /mcp/servers'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"cc26ed40-b356-428f-b00d-c426fbd1df64\",\"serving_data\":\"\"}]}",
+      "why_probed": "Establishes whether the legacy MCP surface exists on this workspace at all. Governs the scope of everything below.",
+      "subject_exists_upstream": false,
+      "consequence": "The subject does NOT answer directly even with a full workspace credential, so there is no reachable legacy MCP surface on this workspace to expose. A 403 at the edge proves the POLICY FIRES but does not prove an exposure was closed, and a BROKEN deny would forward to a non-existent path and return a 404, which is also refusal-shaped. Attribution by responder is the only thing separating the two. NOTE: this caveat applies to M3's path only. Phase 2's unclaimed paths DO exist upstream and did answer 200 through the edge, so that half carries no such scoping."
+    },
+    "1_deny_as_deployed": {
+      "anonymous": {
+        "label": "edge_no_credential",
+        "url": "http://localhost:8082/ai-gateway-demo/api/2.0/mcp/servers",
+        "authorization_header_sent": false,
+        "status": 403,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "EDGE_RESOURCE_FILTERING",
+          "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+          "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+          "decided_on": "REQUEST_PATH_ONLY"
+        },
+        "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+        "why_probed": "The deny must not depend on the caller lacking a credential.",
+        "m3_marker_present": false,
+        "m3_marker_header": null,
+        "attributed": {
+          "ok": true,
+          "control": "TERMINAL_ALLOW_LIST",
+          "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+        }
+      },
+      "authenticated": {
+        "label": "edge_valid_credential",
+        "url": "http://localhost:8082/ai-gateway-demo/api/2.0/mcp/servers",
+        "authorization_header_sent": true,
+        "status": 403,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "EDGE_RESOURCE_FILTERING",
+          "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+          "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+          "decided_on": "REQUEST_PATH_ONLY"
+        },
+        "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+        "why_probed": "The caller this control exists to stop is one who HOLDS a workspace token. A deny that only refuses anonymous callers is not a deny.",
+        "m3_marker_present": false,
+        "m3_marker_header": null,
+        "attributed": {
+          "ok": true,
+          "control": "TERMINAL_ALLOW_LIST",
+          "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+        }
+      }
+    },
+    "2_unclaimed_paths_as_deployed": {
+      "probes": [
+        {
+          "label": "unclaimed/api/2.0/token/list[anonymous]",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/token/list",
+          "authorization_header_sent": false,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Personal access token metadata. The worst of the three: it enumerates credentials, and it answered 200 through the edge to a caller holding none of its own.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false,
+          "probe": "anonymous"
+        },
+        {
+          "label": "unclaimed/api/2.0/token/list[with_token]",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/token/list",
+          "authorization_header_sent": true,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Personal access token metadata. The worst of the three: it enumerates credentials, and it answered 200 through the edge to a caller holding none of its own.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false,
+          "probe": "with_token"
+        },
+        {
+          "label": "unclaimed/api/2.0/clusters/list[anonymous]",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/clusters/list",
+          "authorization_header_sent": false,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Compute inventory. Nothing in channel E-3 exposes compute; this path was reachable purely because no selector claimed it.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false,
+          "probe": "anonymous"
+        },
+        {
+          "label": "unclaimed/api/2.0/clusters/list[with_token]",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/clusters/list",
+          "authorization_header_sent": true,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Compute inventory. Nothing in channel E-3 exposes compute; this path was reachable purely because no selector claimed it.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false,
+          "probe": "with_token"
+        },
+        {
+          "label": "unclaimed/api/2.0/serving-endpoints[anonymous]",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/serving-endpoints",
+          "authorization_header_sent": false,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "The model INDEX, as opposed to M1's single approved invocation path. route-table M1's exposure_scope says 'One approved model service per route. Not a wildcard over /serving-endpoints.' This path is how that scope was escaped without a wildcard.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false,
+          "probe": "anonymous"
+        },
+        {
+          "label": "unclaimed/api/2.0/serving-endpoints[with_token]",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/serving-endpoints",
+          "authorization_header_sent": true,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "The model INDEX, as opposed to M1's single approved invocation path. route-table M1's exposure_scope says 'One approved model service per route. Not a wildcard over /serving-endpoints.' This path is how that scope was escaped without a wildcard.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false,
+          "probe": "with_token"
+        }
+      ],
+      "any_reached_upstream": false,
+      "all_refused_by_the_allow_list": true,
+      "reading": "Every unclaimed path was refused, and by the allow-list's own named voice rather than a catch-all. The perimeter is installed. Phase 4 is what shows it is the perimeter doing it."
+    },
+    "3_control_a_allow_list_disabled": {
+      "flows_disabled": [
+        "X-terminal-allow-list"
+      ],
+      "put_status": 200,
+      "deploy_status": 202,
+      "mcp_path": {
+        "label": "allow_list_off_mcp_path",
+        "url": "http://localhost:8082/ai-gateway-demo/api/2.0/mcp/servers",
+        "authorization_header_sent": false,
+        "status": 403,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "UNRECOGNISED",
+          "responder": "EDGE_POLICY_OR_PROXY_ERROR",
+          "meaning": "The edge handled it and answered in its own voice. A policy refusal or a proxy failure -- the gateway is the subject."
+        },
+        "body": "{\n  \"error\": \"route_not_exposed\",\n  \"marker\": \"AWOZ-1227-M3-LEGACY-MCP-DENIED-AT-THE-EDGE\",\n  \"route_id\": \"M3\",\n  \"refused_by\": \"AWOZ-1227 edge, by explicit decision\",\n  \"reason\": \"Databricks documents that these bypass Unity AI Gateway grants, policies and guardrails, and their calls do not appear in the tracing tables. A route that is invisible to the audit path cannot satisfy AC5 on any consume",
+        "why_probed": "The allow-list is the only thing standing between a caller and M3's mock. With it off, M3's marker must appear -- that is what proves M3's deny is a working backstop and not dead configuration.",
+        "m3_marker_present": true,
+        "m3_marker_header": "M3-explicit-deny",
+        "attributed": {
+          "ok": true,
+          "control": "M3_EXPLICIT_DENY",
+          "basis": "403 carrying M3's attribution marker in the body. The mock policy generated from route-table row M3 answered, so the refusal is the DECISION, with its CONOPS reason in the response the caller receives."
+        }
+      },
+      "m3_marker_appeared": true,
+      "unclaimed_probes": [
+        {
+          "label": "reopened/api/2.0/token/list",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/token/list",
+          "authorization_header_sent": true,
+          "status": 200,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "UNRECOGNISED",
+            "responder": "NOT_A_REFUSAL",
+            "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+          },
+          "body": "{\"token_infos\":[{\"token_id\":\"0fc8602e3a5714275dfd4bdb7ac198a287fda30d46a0a70596c4522077f73941\",\"creation_time\":1792249094708,\"expiry_time\":1794841094708,\"comment\":\"ashu\",\"last_accessed_time\":1792563993435,\"autoscope_state\":\"AUTOSCOPE_STATE_DISABLED\"},{\"token_id\":\"765938e959215c2fd0b37e790cde87b96f852a879b51bcc4100d1ef8a9573ac7\",\"creation_time\":1792334575432,\"expiry_time\":1793544175432,\"comment\":\"t",
+          "why_probed": "With the allow-list off this must come back to life for a token-bearing caller. If it does not, the allow-list was not what was closing it and phase 2 credited the wrong control.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "reached_upstream": true
+        },
+        {
+          "label": "reopened/api/2.0/clusters/list",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/clusters/list",
+          "authorization_header_sent": true,
+          "status": 200,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "UNRECOGNISED",
+            "responder": "NOT_A_REFUSAL",
+            "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+          },
+          "body": "{}",
+          "why_probed": "With the allow-list off this must come back to life for a token-bearing caller. If it does not, the allow-list was not what was closing it and phase 2 credited the wrong control.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "reached_upstream": true
+        },
+        {
+          "label": "reopened/api/2.0/serving-endpoints",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/serving-endpoints",
+          "authorization_header_sent": true,
+          "status": 200,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "UNRECOGNISED",
+            "responder": "NOT_A_REFUSAL",
+            "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+          },
+          "body": "{\"endpoints\":[{\"name\":\"databricks-gpt-oss-120b\",\"creation_timestamp\":1754179200000,\"last_updated_timestamp\":1754179200000,\"state\":{\"ready\":\"READY\",\"config_update\":\"NOT_UPDATING\"},\"config\":{\"served_entities\":[{\"name\":\"databricks-gpt-oss-120b\",\"entity_name\":\"system.ai.gpt-oss-120b\",\"type\":\"FOUNDATION_MODEL\",\"foundation_model\":{\"name\":\"system.ai.gpt-oss-120b\",\"display_name\":\"GPT OSS 120B\",\"docs\":\"htt",
+          "why_probed": "With the allow-list off this must come back to life for a token-bearing caller. If it does not, the allow-list was not what was closing it and phase 2 credited the wrong control.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "reached_upstream": true
+        }
+      ],
+      "reopened_count": 3,
+      "of": 3,
+      "reading_m3": "M3's marker appeared the moment the allow-list was removed, on the same URL with nothing else changed. M3's mock policy fires, short-circuits, and carries its CONOPS reason -- it is a working backstop that the allow-list simply reaches first (AI-9).",
+      "reading_perimeter": "3/3 unclaimed paths answered 2xx again with the allow-list off. The allow-list is demonstrably the control closing them -- same paths, same client, one variable.",
+      "note_on_what_was_done": "This phase briefly restored the open-proxy state described in the module docstring. It is the only honest way to show the allow-list is load-bearing. Phase 5 closes it; the snapshot on disk closes it even if this process dies."
+    },
+    "4_control_b_both_disabled": {
+      "flows_disabled": [
+        "X-terminal-allow-list",
+        "M3-explicit-deny-legacy-mcp"
+      ],
+      "put_status": 200,
+      "deploy_status": 202,
+      "mcp_path": {
+        "label": "both_disabled_mcp_path",
+        "url": "http://localhost:8082/ai-gateway-demo/api/2.0/mcp/servers",
+        "authorization_header_sent": false,
+        "status": 401,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "UPSTREAM",
+          "responder": "UPSTREAM_VIA_THE_EDGE",
+          "meaning": "The edge matched a route and forwarded; the answer is the upstream's. A refusal here is a TARGET problem, not a policy problem."
+        },
+        "body": "{\"error_code\":401,\"message\":\"Credential was not sent or was of an unsupported type for this API. [ReqId: db218894-b16c-403e-8c2c-5c9e795d436a]\"}",
+        "why_probed": "With no edge control on this path, the request must be FORWARDED. That is what proves the path reaches the edge, matches the context path and is routable -- so phases 1-3's refusals were policies, not a dead URL.",
+        "m3_marker_present": false,
+        "m3_marker_header": null,
+        "request_was_forwarded": true
+      },
+      "request_was_forwarded": true,
+      "reading": "Forwarded. The path reaches the edge, matches the context path and would be proxied, so every refusal above was a policy decision rather than a dead URL, a wrong context path or a plan problem."
+    },
+    "5_restored": {
+      "put_status": 200,
+      "deploy_status": 202,
+      "mcp_path": {
+        "label": "restored_mcp_path",
+        "url": "http://localhost:8082/ai-gateway-demo/api/2.0/mcp/servers",
+        "authorization_header_sent": false,
+        "status": 403,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "EDGE_RESOURCE_FILTERING",
+          "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+          "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+          "decided_on": "REQUEST_PATH_ONLY"
+        },
+        "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+        "why_probed": "Reversibility for M3.",
+        "m3_marker_present": false,
+        "m3_marker_header": null,
+        "attributed": {
+          "ok": true,
+          "control": "TERMINAL_ALLOW_LIST",
+          "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+        }
+      },
+      "unclaimed_probes": [
+        {
+          "label": "restored/api/2.0/token/list",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/token/list",
+          "authorization_header_sent": true,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Reversibility for the perimeter, probed with a caller token because that is the probe phase 3 showed can tell open from closed. Phases 2-4 without this show the perimeter can be BROKEN, not that it works and comes back.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false
+        },
+        {
+          "label": "restored/api/2.0/clusters/list",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/clusters/list",
+          "authorization_header_sent": true,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Reversibility for the perimeter, probed with a caller token because that is the probe phase 3 showed can tell open from closed. Phases 2-4 without this show the perimeter can be BROKEN, not that it works and comes back.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false
+        },
+        {
+          "label": "restored/api/2.0/serving-endpoints",
+          "url": "http://localhost:8082/ai-gateway-demo/api/2.0/serving-endpoints",
+          "authorization_header_sent": true,
+          "status": 403,
+          "responder": {
+            "round_trip_headers": true,
+            "vocabulary": "EDGE_RESOURCE_FILTERING",
+            "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+            "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+            "decided_on": "REQUEST_PATH_ONLY"
+          },
+          "body": "{\"message\":\"You're not allowed to access this resource\",\"http_status_code\":403}",
+          "why_probed": "Reversibility for the perimeter, probed with a caller token because that is the probe phase 3 showed can tell open from closed. Phases 2-4 without this show the perimeter can be BROKEN, not that it works and comes back.",
+          "m3_marker_present": false,
+          "m3_marker_header": null,
+          "attributed": {
+            "ok": true,
+            "control": "TERMINAL_ALLOW_LIST",
+            "basis": "403 from Gravitee's resource-filtering policy, by name and in its own words. The path is not on the allow-list. This is the perimeter working; it carries no reason, so it is not M3's deny."
+          },
+          "reached_upstream": false
+        }
+      ],
+      "perimeter_back": true,
+      "still_open_after_restore": [],
+      "reclosed_by_the_allow_list_by_name": [
+        "http://localhost:8082/ai-gateway-demo/api/2.0/token/list",
+        "http://localhost:8082/ai-gateway-demo/api/2.0/clusters/list",
+        "http://localhost:8082/ai-gateway-demo/api/2.0/serving-endpoints"
+      ],
+      "probed_with": "caller_token"
+    }
+  },
+  "verdict": "PERIMETER_CLOSED_M3_IS_THE_BACKSTOP_SUBJECT_ABSENT_UPSTREAM",
+  "which_control_answers_first": {
+    "measured": "TERMINAL_ALLOW_LIST",
+    "m3_is": "a backstop, reachable only with the allow-list off",
+    "why": "Gravitee evaluates flows from the most GENERIC selector to the most specific. The allow-list's selector is `/` STARTS_WITH, the most generic there is, so it is evaluated FIRST however late it appears in the flows array. Proven both ways on 2026-10-21: with the allow-list enabled the MCP path answers in resource-filtering's words; disable that one flow and the same path returns M3's marker.",
+    "consequence_accepted": "AI-9. The caller receives the allow-list's reasonless 403 rather than M3's CONOPS reason. The trade is deliberate: the reason-carrier fails OPEN and the enforcer fails CLOSED, so the enforcer is the one that must answer first."
+  },
+  "findings": {
+    "b48": "Gravitee FORWARDS any path that matches no flow selector; it does not refuse it. With this API's target at the workspace root, that made the AI route an open reverse proxy to the whole Databricks REST API for any caller holding ANY workspace token, on paths the route table never exposed. Measured 2026-10-21. Fixed on this API by a terminal resource-filtering whitelist derived from the forwarding flows' own selectors. SEVERITY CORRECTED IN PLACE (B-19): the first write-up of this finding said the paths were reachable with NO credential, as the gateway's injected identity. Measured: anonymous gets the upstream's 401, because the strip-and-inject steps live inside M1's flow, whose selector is EQUALS on the single model path. So this was a bypass of the ROUTE RESTRICTION, with the caller's own entitlements -- not a privilege escalation. It was one selector edit away from being one.",
+    "ai_4": "CLOSED BY MEASUREMENT, and it was real. M3's deny was policy-request-validation with an empty `rules` list, which validates nothing and passes everything. The policy LOADED and forwarded -- AI-4 predicted the outcome and the wrong mechanism. Re-expressed as a `mock` policy whose fields were read from this installation's schema endpoint, with enforcement moved behind it to the allow-list so a future failure of the deny falls CLOSED.",
+    "what_caught_it": "Not a gate and not the policy. This test, because it required Gravitee's own vocabulary instead of accepting any 4xx. An assertion of `status in (401, 403)` would have passed on the upstream's forwarded 401 and the no-op deny would have shipped as working."
+  },
+  "scope_of_this_result": "M3's path does not answer upstream even to a full workspace credential, so the M3 half is evidence that the CONTROL WORKS, not that a reachable exposure was closed. The unclaimed-path half carries no such caveat: those paths DO exist, DID answer 200 through the edge, and are now refused.",
+  "what_this_does_not_prove": {
+    "the_estate": "The allow-list is on this ONE API. scripts/29's sharing and storage APIs still forward unmatched paths and are confined only by their endpoint target carrying a deep base path, so a stray path appends and the upstream 404s -- confinement by string concatenation, not a control, and one target edit from being gone. Nothing here tests them. B-48 stays OPEN.",
+    "authorisation": "resource-filtering decides on the request PATH. It says nothing about who the caller is, and this route's plan is KEY_LESS (AI-1), so a 403 here is not an unentitled caller being refused.",
+    "exhaustiveness": "3 paths were probed out of hundreds in the Databricks REST API. What makes the result general is the whitelist's default-deny SHAPE, not this sample.",
+    "m2": "Ungenerated (AI-5). \u00a72.3.2 gives M2's method as 'MCP', a protocol not an HTTP method, and a POST-only selector would silently drop the streamable-HTTP event stream. OD-8's other half stays open.",
+    "ac5_audit": "No tracing table was read.",
+    "m3_as_first_responder": "NOT shown, and cannot be while the perimeter is on: m3_is_first_responder=False. What is shown is that M3's mock fires, short-circuits and carries its reason when it is the control that is reached. A CONOPS claim that the caller is TOLD why the legacy MCP route is closed is therefore not supported by this run.",
+    "step_conditions": "AI-10. A step-level `condition` that does not evaluate true SILENTLY OMITS the policy -- PUT 200, deploy 202, no warning. Measured here by accident: a condition added to the allow-list step reopened /api/2.0/token/list to 200. Reverted and verified. No `condition` belongs on any step whose absence fails open.",
+    "t15": "No model path or credential injection was touched here -- but T-15 MUST be re-run, because the allow-list is now in the path of the model route T-15 measures."
+  }
+}

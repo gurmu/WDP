@@ -1,0 +1,640 @@
+{
+  "test_id": "T-01",
+  "epic_task": "E1 Task 1.6",
+  "acceptance_criteria": [
+    "AC1",
+    "AC2"
+  ],
+  "conops": [
+    "2.1",
+    "2.3.2",
+    "3.4.1"
+  ],
+  "run_at": "2026-10-22T07:39:01.147004Z",
+  "verdict": "GATEWAY_READ_FAITHFUL_WHERE_OBSERVABLE",
+  "edge_base": "http://localhost:8082",
+  "edge_base_source": "ENV_EXPLICIT",
+  "edge_base_note": null,
+  "route_family_shape": "ROUTE_FAMILY_ONE_API_PER_RECIPIENT",
+  "route_family_inputs": {
+    "iac/config/route-table.yaml": "701e8f0c46ec",
+    "iac/config/policy-classes.yaml": "1776ec999fcd",
+    "iac/config/recipients.yaml": "c4cf6654996b"
+  },
+  "per_recipient": [
+    {
+      "recipient": "psp7-demo-recipient",
+      "slug": "psp7-demo",
+      "edge_path": "/opensharing-demo/psp7-demo",
+      "upstream_host_sha": "13ad6c00...",
+      "credential_expires": "2026-10-22T08:59:42.516Z",
+      "ip_access_list_mode": "NOT_APPLIED_BY_DESIGN",
+      "discovery": {
+        "verdict": "PATHS_DISCOVERED",
+        "share": "awoz1227-psp7-demo-share",
+        "schema": "opensharing_test",
+        "table": "v_entitled_t2",
+        "shares_status": 200,
+        "shares_visible": [
+          "awoz1227-psp7-demo-share"
+        ]
+      },
+      "target": {
+        "share": "awoz1227-psp7-demo-share",
+        "schema": "opensharing_test",
+        "table": "v_entitled_t2"
+      },
+      "routes": [
+        {
+          "route_id": "S1",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 115,
+          "gateway_bytes": 115,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S2",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 89,
+          "gateway_bytes": 89,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S3",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 74,
+          "gateway_bytes": 74,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S4",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 410,
+          "gateway_bytes": 410,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S5",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 410,
+          "gateway_bytes": 410,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S6",
+          "direct_status": 400,
+          "gateway_status": 400,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "verdict": "CANNOT_SEE_NO_DIRECT_CONTROL",
+          "why": "The direct read on this same path did not succeed, so a gateway failure here is not attributable to the gateway. This is the B-40 rule: without a same-path control, a refusal and an absence are the same observation.",
+          "direct_detail": "{\"error_code\":\"INVALID_PARAMETER_VALUE\",\"message\":\"DS_UNSUPPORTED_TABLE_TYPE: Could not retrieve opensharing_test.v_entitled_t2 from Share awoz1227-psp7-demo-share because table with type [VIEW] is currently unsupported in version queries.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.ErrorIn",
+          "gateway_detail": "{\"error_code\":\"INVALID_PARAMETER_VALUE\",\"message\":\"DS_UNSUPPORTED_TABLE_TYPE: Could not retrieve opensharing_test.v_entitled_t2 from Share awoz1227-psp7-demo-share because table with type [VIEW] is currently unsupported in version queries.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.ErrorIn"
+        },
+        {
+          "route_id": "S7",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [
+              "delta-sharing-capabilities"
+            ],
+            "passthrough_present_direct": [
+              "delta-sharing-capabilities"
+            ],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 727,
+          "gateway_bytes": 727,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S8",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [
+              "delta-sharing-capabilities"
+            ],
+            "passthrough_present_direct": [
+              "delta-sharing-capabilities"
+            ],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "direct_summary": {
+            "lines": 3,
+            "schema_fields": [
+              "record_id",
+              "agency_name",
+              "use_case",
+              "region",
+              "record_date",
+              "metric_value"
+            ],
+            "num_records": 50,
+            "files": 1,
+            "stats_complete": true,
+            "body_withheld_because": "The query response carries freshly signed storage URLs. A pre-signed URL is a credential -- it carries an access key id and a signature and needs no other authentication -- so it is summarised here and never written to evidence."
+          },
+          "gateway_summary": {
+            "lines": 3,
+            "schema_fields": [
+              "record_id",
+              "agency_name",
+              "use_case",
+              "region",
+              "record_date",
+              "metric_value"
+            ],
+            "num_records": 50,
+            "files": 1,
+            "stats_complete": true,
+            "body_withheld_because": "The query response carries freshly signed storage URLs. A pre-signed URL is a credential -- it carries an access key id and a signature and needs no other authentication -- so it is summarised here and never written to evidence."
+          },
+          "comparison_form": "SCHEMA_AND_ROW_COUNT_NOT_BYTES",
+          "comparison_form_because": "The signed URLs in this body change per request by design. A byte comparison would always differ and would blame the gateway for the platform's own freshness.",
+          "verdict": "GATEWAY_QUERY_EQUIVALENT"
+        }
+      ],
+      "verdict": "GATEWAY_READ_FAITHFUL",
+      "verdict_precedence": "ATTRIBUTABLE_OUTRANKS_UNOBSERVABLE -- see aggregate() and B-43",
+      "routes_measured": 8,
+      "routes_faithful": 7,
+      "routes_unobservable": 1,
+      "routes_unobservable_note": "Carried BESIDE the verdict, never overriding it. An unobservable route means one fewer measurement, not an unobservable run -- B-43."
+    },
+    {
+      "recipient": "awoz1227-psp7-t2-us-recipient",
+      "slug": "psp7-t2-us",
+      "edge_path": "/opensharing-demo/psp7-t2-us",
+      "upstream_host_sha": "aa8b5b00...",
+      "credential_expires": "2026-10-28T06:27:34.962Z",
+      "ip_access_list_mode": "NOT_APPLIED_BY_DESIGN",
+      "discovery": {
+        "verdict": "PATHS_DISCOVERED",
+        "share": "awoz1227-psp7-t2-us-share",
+        "schema": "opensharing_test",
+        "table": "v_entitled_t2_us",
+        "shares_status": 200,
+        "shares_visible": [
+          "awoz1227-psp7-t2-us-share"
+        ]
+      },
+      "target": {
+        "share": "awoz1227-psp7-t2-us-share",
+        "schema": "opensharing_test",
+        "table": "v_entitled_t2_us"
+      },
+      "routes": [
+        {
+          "route_id": "S1",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 116,
+          "gateway_bytes": 116,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S2",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 90,
+          "gateway_bytes": 90,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S3",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 75,
+          "gateway_bytes": 75,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S4",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 427,
+          "gateway_bytes": 427,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S5",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 427,
+          "gateway_bytes": 427,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S6",
+          "direct_status": 400,
+          "gateway_status": 400,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [],
+            "passthrough_present_direct": [],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "verdict": "CANNOT_SEE_NO_DIRECT_CONTROL",
+          "why": "The direct read on this same path did not succeed, so a gateway failure here is not attributable to the gateway. This is the B-40 rule: without a same-path control, a refusal and an absence are the same observation.",
+          "direct_detail": "{\"error_code\":\"INVALID_PARAMETER_VALUE\",\"message\":\"DS_UNSUPPORTED_TABLE_TYPE: Could not retrieve opensharing_test.v_entitled_t2_us from Share awoz1227-psp7-t2-us-share because table with type [VIEW] is currently unsupported in version queries.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Err",
+          "gateway_detail": "{\"error_code\":\"INVALID_PARAMETER_VALUE\",\"message\":\"DS_UNSUPPORTED_TABLE_TYPE: Could not retrieve opensharing_test.v_entitled_t2_us from Share awoz1227-psp7-t2-us-share because table with type [VIEW] is currently unsupported in version queries.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Err"
+        },
+        {
+          "route_id": "S7",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [
+              "delta-sharing-capabilities"
+            ],
+            "passthrough_present_direct": [
+              "delta-sharing-capabilities"
+            ],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "comparison_form": "BYTE_FOR_BYTE",
+          "direct_bytes": 727,
+          "gateway_bytes": 727,
+          "verdict": "GATEWAY_BODY_IDENTICAL"
+        },
+        {
+          "route_id": "S8",
+          "direct_status": 200,
+          "gateway_status": 200,
+          "direct_retried": false,
+          "headers": {
+            "leaked_through_gateway": [
+              "x-gravitee-request-id",
+              "x-gravitee-transaction-id"
+            ],
+            "present_direct_only": [
+              "server",
+              "server-timing",
+              "x-request-id"
+            ],
+            "passthrough_survived": [
+              "delta-sharing-capabilities"
+            ],
+            "passthrough_present_direct": [
+              "delta-sharing-capabilities"
+            ],
+            "this_is_not_t07": "Recorded as T-07's input, not as T-07's verdict. A header absent from the gateway response may have been stripped by the perimeter or never sent by the upstream, and those are the same observation unless the direct response is captured beside it -- which is why present_direct_only exists."
+          },
+          "direct_summary": {
+            "lines": 3,
+            "schema_fields": [
+              "record_id",
+              "agency_name",
+              "use_case",
+              "region",
+              "record_date",
+              "metric_value"
+            ],
+            "num_records": 16,
+            "files": 1,
+            "stats_complete": true,
+            "body_withheld_because": "The query response carries freshly signed storage URLs. A pre-signed URL is a credential -- it carries an access key id and a signature and needs no other authentication -- so it is summarised here and never written to evidence."
+          },
+          "gateway_summary": {
+            "lines": 3,
+            "schema_fields": [
+              "record_id",
+              "agency_name",
+              "use_case",
+              "region",
+              "record_date",
+              "metric_value"
+            ],
+            "num_records": 16,
+            "files": 1,
+            "stats_complete": true,
+            "body_withheld_because": "The query response carries freshly signed storage URLs. A pre-signed URL is a credential -- it carries an access key id and a signature and needs no other authentication -- so it is summarised here and never written to evidence."
+          },
+          "comparison_form": "SCHEMA_AND_ROW_COUNT_NOT_BYTES",
+          "comparison_form_because": "The signed URLs in this body change per request by design. A byte comparison would always differ and would blame the gateway for the platform's own freshness.",
+          "verdict": "GATEWAY_QUERY_EQUIVALENT"
+        }
+      ],
+      "verdict": "GATEWAY_READ_FAITHFUL",
+      "verdict_precedence": "ATTRIBUTABLE_OUTRANKS_UNOBSERVABLE -- see aggregate() and B-43",
+      "routes_measured": 8,
+      "routes_faithful": 7,
+      "routes_unobservable": 1,
+      "routes_unobservable_note": "Carried BESIDE the verdict, never overriding it. An unobservable route means one fewer measurement, not an unobservable run -- B-43."
+    },
+    {
+      "recipient": "awoz1227-t02-iplist-recipient",
+      "slug": "t02-iplist",
+      "edge_path": "/opensharing-demo/t02-iplist",
+      "upstream_host_sha": "a7066515...",
+      "credential_expires": "2026-10-28T06:27:35.615Z",
+      "ip_access_list_mode": "APPLIED",
+      "discovery": {
+        "verdict": "CANNOT_SEE_SHARES_LIST_FAILED",
+        "share": null,
+        "schema": null,
+        "table": null,
+        "shares_status": 403,
+        "detail": "{\"error_code\":\"PERMISSION_DENIED\",\"message\":\"Permission denied due to IP address (72.83.83.x/24#sha12=0af7da533bad) not in IP Access List.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"a4464998-a931-42e8-9375-5b5b4a2e8ef0\",\"serving_data\":\"\"}]}"
+      },
+      "verdict": "CANNOT_SEE_REFUSED_BY_BOTH_ALLOW_LISTS",
+      "why": "Both allow-lists refuse this client independently, and they do not even compare the same address: Databricks compares this host's public NAT address, the gateway compares '172.21.0.1'. So T-01 has no control AND no path for this recipient, and widening either list alone would not change that. Both are deliberate (recipients.yaml for the first, B-47's fix for the second) -- this is the two controls working, not two faults. Naming only one of them would send the next reader to widen a list that is not the blocker they are facing.",
+      "not_a_gateway_result": true,
+      "edge_probe": {
+        "status": 403,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "EDGE_IP_FILTERING",
+          "responder": "EDGE_IP_FILTERING_POLICY",
+          "observed_client_ip": "172.21.0.1",
+          "meaning": "Gravitee's ip-filtering policy refused this request, by name and in its own words. This is a POSITIVE identification of one named policy, not the catch-all -- the distinction B-46 exists to preserve. The policy also reports the address it observed, which is the address the allow-list is actually matched against."
+        },
+        "why_probed": "To find out whether the Databricks list is the only thing refusing this recipient, or merely the first."
+      },
+      "refused_by": [
+        "the Databricks-side IP access list, on the DIRECT read",
+        "the gateway's own ip-filtering policy, at the EDGE"
+      ]
+    }
+  ],
+  "binding_probe": {
+    "credential_of": "psp7-demo-recipient",
+    "control_route": "/opensharing-demo/psp7-demo",
+    "control_status": 200,
+    "control_responder": {
+      "round_trip_headers": true,
+      "vocabulary": "UNRECOGNISED",
+      "responder": "EDGE_POLICY_OR_PROXY_ERROR",
+      "meaning": "The edge handled it and answered in its own voice. A policy refusal or a proxy failure -- the gateway is the subject."
+    },
+    "crossed_route": "/opensharing-demo/psp7-t2-us",
+    "crossed_status": 400,
+    "crossed_responder": {
+      "round_trip_headers": true,
+      "vocabulary": "UPSTREAM",
+      "responder": "UPSTREAM_VIA_THE_EDGE",
+      "meaning": "The edge matched a route and forwarded; the answer is the upstream's. A refusal here is a TARGET problem, not a policy problem."
+    },
+    "crossed_names_the_mismatch": true,
+    "crossed_detail": "{\"error_code\":\"BAD_REQUEST\",\"message\":\"Request URL hostname 'aa8b5b00-e4e4-4977-85b3-45b693ab87be.opensharing.us-east-2.cloud.databricks.com' does not match with the recipient id '13ad6c00-c648-44ba-85c3-5bdb52f6a53e'.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"c95a2a1d-5fac-4491-aed4-395201938443\",\"serving_data\":\"\"}]}",
+    "one_variable": "which recipient's route the request was sent to",
+    "verdict": "BINDING_ENFORCED_AND_THE_ERROR_NAMES_BOTH_HALVES",
+    "why": "Refused on the crossed route, 200 on its own route, same credential, same run, one variable. And the error names both the hostname received and the recipient the token belongs to -- the opposite of B-20's problem, and the model E5's error contract should copy."
+  },
+  "defect_history": [
+    {
+      "id": "B-43",
+      "found": "2026-10-21",
+      "found_by": "reading this test's own first-run output",
+      "defect": "verdict precedence inverted in the per-recipient roll-up: CANNOT_SEE_NO_DIRECT_CONTROL was tested FIRST, so two routes without a control erased six routes that had one and had produced an attributable finding",
+      "first_run_said": "CANNOT_SEE",
+      "first_run_should_have_said": "an attributable verdict naming the six routes where the gateway refused a read that succeeded directly",
+      "fix": "aggregate(): CANNOT_SEE is now the verdict of LAST RESORT. It is returned only when NO route produced an attributable result, and the count of unobservable routes is carried beside the verdict so the gap is visible rather than decisive.",
+      "general_rule": "An aggregator that can manufacture a silent negative out of a run that looked and found something is worse than no aggregator. Unobservable must never outrank observed (docs/12 \u00a712.9).",
+      "status": "FIXED -- carried forward, not erased (B-19)"
+    },
+    {
+      "id": "B-44",
+      "found": "2026-10-21",
+      "found_by": "curling the gateway by hand after the first run reported 404 everywhere",
+      "defect": "an EDGE refusal and an UPSTREAM refusal forwarded THROUGH the edge are the same status code with opposite remedies (fix the policy vs fix the target), and this test could not tell them apart",
+      "first_run_said": "404 on every gateway path, read as the gateway refusing",
+      "first_run_should_have_said": "a DIFFERENT API, prefix-matching /opensharing-demo/, forwarded the request upstream with the recipient slug glued into the protocol path; Databricks produced the 404. The edge was not refusing -- it was forwarding to the wrong place.",
+      "discriminators_now_used": [
+        "Gravitee's own unmatched-path refusal is text/plain, body 'No context-path matches the request URI.', with NO x-gravitee-* headers",
+        "Databricks answers JSON carrying error_code and details[].@type: type.googleapis.com/google.rpc.*",
+        "a response that round-tripped the edge carries x-gravitee-* headers"
+      ],
+      "fix": "classify_responder(), applied in compare_one AND in binding_probe. Phase 2 is where this bit hardest: its expected result IS a refusal, so an edge refusal arriving for an unrelated reason would have been scored as the probe succeeding.",
+      "general_rule": "B-20, ours before theirs: a verdict vocabulary too coarse to name the refusing party fails toward blaming the nearest thing.",
+      "status": "FIXED -- carried forward, not erased (B-19)"
+    }
+  ],
+  "shape_note": "Reported PER RECIPIENT because the upstream is per-recipient. A single-endpoint T-01 would pass for whichever recipient matched the pinned host and report failure for the others while the gateway was working correctly. docs/11 B-42, docs/10 D-9.",
+  "what_this_does_not_prove": [
+    "T-07. The header observations are T-07's INPUT. A header absent from the gateway response may have been stripped or never sent, and only the direct capture beside it tells those apart.",
+    "T-05. No rate limit was exercised. A handful of sequential reads is below every configured limit, so nothing here says the limiters work.",
+    "T-03. No refusal from outside the allow-list was attempted, and two of the three recipients carry the gateway allow-list DISABLED by design (recipients.yaml), so this run could not have produced one.",
+    "That traffic cannot bypass the edge. \u00a711.7 B-35: an IP allow-list cannot distinguish 'via the gateway' from 'direct' when both leave one host through one NAT address. This test reads BOTH ways on purpose and proves the two paths agree -- it does not and cannot prove the direct path is closed to a real consumer."
+  ]
+}

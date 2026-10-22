@@ -1,0 +1,219 @@
+{
+  "_generated": {
+    "by": "scripts/29_gen_gravitee_route_family.py",
+    "at": "2026-10-21T20:34:24.437651Z",
+    "route": "F1",
+    "edge_path": "/storage-proxy",
+    "resolves": "B-3 / document defect D-4",
+    "upstream": "storage_host_from_signed_url -- NOT CONFIGURABLE",
+    "upstream_because": "The host is whatever the sharing server vended inside the pre-signed URL in the S8/S9 response body. There is no static target to configure, which is why class D's forwarding policy is carried disabled."
+  },
+  "api": {
+    "name": "AWOZ-1227 F1 Storage Proxy",
+    "apiVersion": "1.5.0-generated",
+    "definitionVersion": "V4",
+    "type": "PROXY",
+    "description": "Channel E-1 route F1: file download through the gateway storage proxy. Its own HTTP listener, not a flow selector beneath the sharing listener. GENERATED -- do not edit.",
+    "listeners": [
+      {
+        "type": "HTTP",
+        "paths": [
+          {
+            "path": "/storage-proxy"
+          }
+        ],
+        "entrypoints": [
+          {
+            "type": "http-proxy"
+          }
+        ]
+      }
+    ],
+    "endpointGroups": [
+      {
+        "name": "storage-from-signed-url",
+        "type": "http-proxy",
+        "endpoints": [
+          {
+            "name": "placeholder-no-static-target",
+            "type": "http-proxy",
+            "configuration": {
+              "target": "https://storage.invalid/"
+            },
+            "_rationale": {
+              "target_is_a_placeholder": true,
+              "because": "Gravitee requires an endpoint group with a target to create a PROXY API. F1 has no static upstream: the host lives inside the signed URL. storage.invalid is used so that a request reaching this upstream FAILS LOUDLY rather than silently hitting a real host, and so that no real storage hostname is committed to the repository."
+            }
+          }
+        ]
+      }
+    ],
+    "flows": [
+      {
+        "name": "F1-class-D",
+        "enabled": true,
+        "selectors": [
+          {
+            "type": "HTTP",
+            "path": "/files/:opaque",
+            "pathOperator": "EQUALS",
+            "methods": [
+              "GET",
+              "HEAD"
+            ]
+          }
+        ],
+        "request": [
+          {
+            "name": "Require bearer token present",
+            "policy": "policy-assign-attributes",
+            "enabled": true,
+            "configuration": {
+              "scope": "REQUEST",
+              "attributes": [
+                {
+                  "name": "has-bearer",
+                  "value": "{#request.headers['Authorization'] != null && #request.headers['Authorization'].startsWith('Bearer ')}"
+                }
+              ]
+            },
+            "_rationale": {
+              "conops": "3.1 / 2.1 step 2",
+              "note": "Presence and well-formedness only. The gateway does NOT validate the token -- Databricks does, at step 4. This is the key architectural principle in \u00a71 and the reason the plans are KEY_LESS."
+            }
+          },
+          {
+            "name": "Inject correlation ID",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "addHeaders": [
+                {
+                  "name": "X-Correlation-Id",
+                  "value": "{#request.id}"
+                }
+              ]
+            },
+            "_rationale": {
+              "conops": "AC5 / T-11",
+              "note": "Cross-referenced against system.access.audit by T-11. The header must be ADDED on the request so it appears in both logs; a response-side correlation id correlates nothing."
+            }
+          },
+          {
+            "name": "Rate limit (per-consumer quota)",
+            "policy": "rate-limit",
+            "enabled": true,
+            "configuration": {
+              "rate": {
+                "limit": 120,
+                "periodTime": 1,
+                "periodTimeUnit": "MINUTES",
+                "key": "{#request.headers['Authorization']}"
+              }
+            },
+            "_rationale": {
+              "conops": "3.1 / T-05",
+              "limit_note": "Higher than class A on purpose. One logical table read fans out into one request per file action, so a limit tuned for \"one call per user action\" refuses a legitimate single query. T-05 should measure the fan-out factor before this number is settled."
+            }
+          },
+          {
+            "name": "Forward signed request to storage",
+            "policy": "policy-http-callout",
+            "enabled": false,
+            "configuration": {
+              "method": "GET",
+              "url": "{#request.headers['X-Signed-Url'][0]}"
+            },
+            "_rationale": {
+              "enabled_false_because": "policy-http-callout's schema on this installation requires a static or EL-expression `url`, and the real pre-signed URL exists only per-request inside the S8/S9 response body. There is no clean header or static value to point it at without an extraction step this prototype has not built. Carried DISABLED and visible rather than omitted. \u00a72.2 step 6 and \u00a73.2 allow this outcome explicitly: record the OD-1 fallback result for T-08."
+            }
+          }
+        ],
+        "response": [
+          {
+            "name": "Header redaction",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "removeHeaders": [
+                "X-Databricks-Org-Id",
+                "X-Databricks-Request-Id",
+                "Server",
+                "Via",
+                "server-timing",
+                "x-request-id",
+                "X-Gravitee-Request-Id",
+                "X-Gravitee-Transaction-Id"
+              ]
+            },
+            "_rationale": {
+              "conops": "2.1 step 5 / 3.1",
+              "measured_state_superseded": "T-07 FAILS AS CONFIGURED. A working 200 through the gateway was observed leaking `server: databricks`, `server-timing`, `x-request-id` and X-Gravitee-* headers. The first four names in this list were in api-definition.json already and the leak happened anyway, which means the list was incomplete -- `Server` with a capital S does not match `server` if the policy compares case-sensitively, and `server-timing` / `x-request-id` were never listed at all. The last four names are added here as the candidate fix and are UNVERIFIED until T-07 re-runs.",
+              "measured_state_superseded_note": "Carried in place, not deleted (B-19). It was right about the cause and wrong about the remedy for two of the five headers.",
+              "measured_state": "PARTIALLY VERIFIED 2026-10-21 by T-01's before/after capture (same path, same credential, same run, direct response beside the gateway response). THREE of the five leaked headers are now gone through the edge and still present direct -- `server`, `server-timing` and `x-request-id` -- so for those the diagnosis above was correct and this list is the fix. TWO survive: `x-gravitee-request-id` and `x-gravitee-transaction-id`. Listing them here does NOT remove them and the entries are retained only so the attempt is on the record. See `unreachable_by_policy`. Evidence: evidence/t01-gateway-read.json, per_recipient[*] .routes[*].headers.",
+              "unreachable_by_policy": {
+                "headers": [
+                  "x-gravitee-request-id",
+                  "x-gravitee-transaction-id"
+                ],
+                "why": "These are the gateway's OWN correlation headers, attached by Gravitee outside the API's policy chain. A response transform-headers policy runs BEFORE they exist, so it cannot remove them. This is not an incomplete list; it is the wrong layer.",
+                "remedy": "Gateway configuration (the gateway's http/report settings), not an API definition. Which means it is NOT expressible in the per-API definitions scripts/29 generates.",
+                "consequence_for_t12": "AC6 / T-12 claim \"redeploy from code\". A fix that lives in gateway config is outside the IaC set this repository currently versions, so the claim has a hole here until the gateway's own configuration is captured as code too. Recorded rather than fixed, because widening the IaC scope is an E2 decision, not a Task 1.6 one.",
+                "consequence_for_conops": "\u00a72.3's header-hygiene language assumes policy is sufficient to control the perimeter's response surface. It is not. Two headers naming the gateway, its request and its transaction reach every recipient. T-07 should assert the three headers it CAN control and record these two as a configuration item with an owner -- failing on all five hides the distinction between a misconfiguration and an architectural limit.",
+                "status": "OPEN -- v1.6 input"
+              },
+              "must_not_remove": [
+                "delta-sharing-capabilities"
+              ],
+              "must_not_remove_because": "\u00a72.3.2 requires the capability header to pass through on S7. The sanitizer and the passthrough requirement meet on that one route, and a remove-list written as \"strip everything unrecognised\" takes this one with it. Allow-list the removals, never deny-list them -- same rule as the IPv4 redaction convention."
+            }
+          },
+          {
+            "name": "Header redaction (storage identifiers)",
+            "policy": "transform-headers",
+            "enabled": true,
+            "configuration": {
+              "removeHeaders": [
+                "X-Amz-Request-Id",
+                "X-Amz-Id-2",
+                "Server"
+              ]
+            }
+          }
+        ],
+        "_provenance": {
+          "route_id": "F1",
+          "policy_class": "D",
+          "open_decision": "OD-1(b)",
+          "requirements": [
+            "Range requests must pass (class D allows range).",
+            "The signed query string is forwarded UNCHANGED -- any rewrite of it invalidates the signature.",
+            "URLs in S8 and S9 response bodies are rewritten to this route."
+          ],
+          "fallback": "\u00a72.2 step 6 and \u00a73.2: if testing shows the gateway cannot forward signed requests, the fallback is storage address limits plus short-lived credentials. The fallback is a documented outcome, not a failure.",
+          "prototype_limit": "T-08's refusal half is not provable here: Free Edition storage is Databricks-managed, so storage-side egress restrictions cannot be set. Record the OD-1 fallback rather than a refusal we cannot produce.",
+          "conops_defect": "D-4",
+          "tests": [
+            "T-08"
+          ]
+        }
+      }
+    ]
+  },
+  "plans": [
+    {
+      "name": "plan-storage-proxy",
+      "security": {
+        "type": "KEY_LESS"
+      },
+      "definitionVersion": "V4"
+    }
+  ],
+  "_not_built": [
+    {
+      "route_id": "F1",
+      "warning": "FORWARDING_DISABLED",
+      "detail": "The listener and the policy chain are real; the forwarding step is not. policy-http-callout needs a static or EL `url` and the pre-signed URL exists only per-request inside the response body. OD-1's documented fallback applies: storage address limits plus short-lived credentials. T-08's refusal half is also not provable on Free Edition, where storage is Databricks-managed."
+    }
+  ]
+}

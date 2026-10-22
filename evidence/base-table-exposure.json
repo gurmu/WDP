@@ -1,0 +1,152 @@
+{
+  "script": "26_remediate_base_table_exposure",
+  "run_at": "2026-10-20T20:18:40.206327Z",
+  "mode": "REMOVE",
+  "base_tables": [
+    "awoz1227_demo.opensharing_test.test_dataset"
+  ],
+  "shares_managed_by_config": [
+    "awoz1227-psp7-demo-share",
+    "awoz1227-psp7-t2-us-share"
+  ],
+  "found_by": "scripts/24 rule 1, which enumerates EVERY share rather than only the ones entitlements.yaml declares",
+  "shares_examined": [
+    "awoz1227-psp7-demo-share",
+    "awoz1227-psp7-t2-us-share",
+    "awoz1227_demo_share1ashu",
+    "awoz1227_p18_primary_share"
+  ],
+  "inventory": {
+    "awoz1227-psp7-demo-share": {
+      "managed_by_config": true,
+      "objects": [
+        {
+          "name": "awoz1227_demo.opensharing_test.v_entitled_t2",
+          "data_object_type": "VIEW",
+          "added_at": "2026-10-20T17:59:39.424000Z",
+          "added_by": "temari.app@gmail.com",
+          "age_seconds": 8341.6,
+          "status": "ACTIVE"
+        }
+      ],
+      "carries_base_table": false,
+      "owner": "temari.app@gmail.com",
+      "created_at": "2026-10-17T15:21:04.538000Z"
+    },
+    "awoz1227-psp7-t2-us-share": {
+      "managed_by_config": true,
+      "objects": [
+        {
+          "name": "awoz1227_demo.opensharing_test.v_entitled_t2_us",
+          "data_object_type": "VIEW",
+          "added_at": "2026-10-20T17:59:41.243000Z",
+          "added_by": "temari.app@gmail.com",
+          "age_seconds": 8340.2,
+          "status": "ACTIVE"
+        }
+      ],
+      "carries_base_table": false,
+      "owner": "temari.app@gmail.com",
+      "created_at": "2026-10-20T17:59:40.533000Z"
+    },
+    "awoz1227_demo_share1ashu": {
+      "managed_by_config": false,
+      "objects": [
+        {
+          "name": "workspace.default.ashu",
+          "data_object_type": "TABLE",
+          "added_at": "2026-10-17T21:52:20.447000Z",
+          "added_by": "temari.app@gmail.com",
+          "age_seconds": 253581.3,
+          "status": "ACTIVE"
+        }
+      ],
+      "carries_base_table": false,
+      "owner": "temari.app@gmail.com",
+      "created_at": "2026-10-17T21:45:40.205000Z"
+    },
+    "awoz1227_p18_primary_share": {
+      "managed_by_config": false,
+      "objects": [
+        {
+          "name": "awoz1227_demo.opensharing_test.test_dataset",
+          "data_object_type": "TABLE",
+          "added_at": "2026-10-19T21:59:20.205000Z",
+          "added_by": "temari.app@gmail.com",
+          "age_seconds": 80362.0,
+          "status": "ACTIVE"
+        }
+      ],
+      "carries_base_table": true,
+      "owner": "temari.app@gmail.com",
+      "created_at": "2026-10-19T21:59:19.455000Z"
+    }
+  },
+  "findings": [
+    {
+      "share": "awoz1227_p18_primary_share",
+      "managed_by_config": false,
+      "base_table_objects": [
+        {
+          "name": "awoz1227_demo.opensharing_test.test_dataset",
+          "data_object_type": "TABLE",
+          "added_at": "2026-10-19T21:59:20.205000Z",
+          "added_by": "temari.app@gmail.com",
+          "age_seconds": 80362.0,
+          "status": "ACTIVE"
+        }
+      ],
+      "exposure_window": {
+        "added_at": "2026-10-19T21:59:20.205000Z",
+        "seconds_in_share_at_this_read": 80362.0,
+        "means": "Measured from the sharing API's own added_at, so it is the platform's record rather than this repo's. An unknown added_at leaves the window unmeasured, not zero."
+      },
+      "grants": [
+        {
+          "principal": "awoz1227_p18_primary_recipient",
+          "privileges": [
+            "SELECT"
+          ]
+        }
+      ],
+      "grant_verdict": "GRANTED",
+      "recipients": [
+        {
+          "recipient": "awoz1227_p18_primary_recipient",
+          "authentication_type": "DATABRICKS",
+          "activated": false,
+          "owner": "temari.app@gmail.com",
+          "ip_access_list": false,
+          "tokens_live": [],
+          "tokens_activation_pending": [],
+          "tokens_expired": [],
+          "verdict": "NO_TOKEN",
+          "means": "The recipient has no token at all, so the grant buys nothing today."
+        }
+      ],
+      "reachability": "DORMANT_NO_LIVE_CREDENTIAL",
+      "means": "Granted recipients exist but none holds a working credential, so the exposure had no reader. It would have acquired one the moment a token was issued."
+    }
+  ],
+  "actions": [
+    {
+      "share": "awoz1227_p18_primary_share",
+      "action": "REMOVE",
+      "http_status": 200,
+      "error_code": null,
+      "error": null,
+      "objects_after": [],
+      "verdict": "REMOVED",
+      "share_now_empty": "The share remains and is empty. It is left in place deliberately: scripts/19 reuses probe 18's shares by name, and deleting one here would make that probe fail with a missing-share error that reads like a permissions problem. An empty share grants nothing."
+    }
+  ],
+  "verdict": "EXPOSURE_FOUND_AND_REMEDIATED",
+  "reachability_summary": {
+    "reachable_now": [],
+    "reachable_on_activation": [],
+    "dormant": [
+      "awoz1227_p18_primary_share"
+    ]
+  },
+  "conops_note": "\u00a73.1's share-isolation rule is written as a rule about how shares are created. This finding is about a share nobody created on purpose: a probe's artifact, kept so a later probe could reuse it, carrying the base table for as long as it sat there. The control that catches it is not a naming convention, it is a periodic metastore-wide assertion that no base table appears in any share -- which is what scripts/24 rule 1 is, and what v1.6 should require as a standing check rather than a publish-time one."
+}

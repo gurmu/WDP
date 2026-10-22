@@ -1,0 +1,1814 @@
+{
+  "task": "E1 Tasks 1.3, 1.4 and 1.5 -- channel model, route table, entitlement model and recipient model as configuration",
+  "date": "2026-10-22T07:58:10.189328+00:00",
+  "files": [
+    "iac/config/channels.yaml",
+    "iac/config/route-table.yaml",
+    "iac/config/entitlements.yaml",
+    "iac/config/recipients.yaml"
+  ],
+  "conops_reference": {
+    "channels": "\u00a72.1",
+    "routes": "\u00a72.3.2",
+    "classes": "\u00a72.3.3",
+    "entitlements": "\u00a73.1, \u00a72.3.1, \u00a73.4, \u00a73.3",
+    "recipients": "\u00a73.1, \u00a73.1.1, \u00a73.2, \u00a73.3, \u00a73.4.1"
+  },
+  "open_decisions_touched": {
+    "OD-5": "OPEN. recipients.yaml builds the bearer-token branch and labels every policy number PROTOTYPE_DEFAULT_NOT_POLICY. Nothing here decides it."
+  },
+  "counts": {
+    "channels": 5,
+    "routes": 16,
+    "gaps": 2,
+    "views": 2,
+    "entitlement_shares": 2,
+    "recipients": 3,
+    "checks": 356,
+    "failed": 0
+  },
+  "scope": "STATIC ONLY. This script compares the config files against the CONOPS lists and against each other. It does not contact the platform, so it cannot say what the metastore holds -- scripts/24 does that for the entitlement model, and a clean result here is not evidence of a correct live state.",
+  "checks": [
+    {
+      "check": "channels: all five \u00a72.1 ids present",
+      "ok": true,
+      "detail": "found ['E-1', 'E-2', 'E-3', 'I-1', 'I-2']"
+    },
+    {
+      "check": "channels: no duplicate ids",
+      "ok": true,
+      "detail": "5 rows, 5 distinct"
+    },
+    {
+      "check": "channel E-1: has direction",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-1: has mechanism",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-1: has gravitee_fronts",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-1: has databricks_control",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-1: has conops_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-1: has prototype_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-1: has tests",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has direction",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has mechanism",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has gravitee_fronts",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has databricks_control",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has conops_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has prototype_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: has tests",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-2: conops_correction is complete",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "channel E-3: has direction",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-3: has mechanism",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-3: has gravitee_fronts",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-3: has databricks_control",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-3: has conops_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-3: has prototype_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel E-3: has tests",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has direction",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has mechanism",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has gravitee_fronts",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has databricks_control",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has conops_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has prototype_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: has tests",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-1: conops_correction is complete",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "channel I-2: has direction",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-2: has mechanism",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-2: has gravitee_fronts",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-2: has databricks_control",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-2: has conops_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-2: has prototype_status",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "channel I-2: has tests",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "routes: all sixteen \u00a72.3.2 ids present",
+      "ok": true,
+      "detail": "missing [], extra []"
+    },
+    {
+      "check": "routes: each id appears exactly once",
+      "ok": true,
+      "detail": "16 rows, 16 distinct"
+    },
+    {
+      "check": "route S1: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S1: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S1: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S1: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S1: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S1: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S1: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S2: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S2: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S2: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S2: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S2: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S2: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S2: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S3: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S3: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S3: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S3: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S3: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S3: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S3: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S4: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S4: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S4: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S4: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S4: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S4: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S4: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S5: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S5: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S5: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S5: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S5: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S5: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S5: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S6: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S6: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S6: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S6: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S6: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S6: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S6: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S7: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S7: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S7: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S7: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S7: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S7: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S7: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S8: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S8: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S8: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S8: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S8: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S8: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S8: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S9: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S9: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S9: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S9: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S9: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S9: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S9: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route S10: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S10: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S10: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S10: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S10: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route S10: target resolves",
+      "ok": true,
+      "detail": "'sharing_endpoint' not a key in targets"
+    },
+    {
+      "check": "route S10: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route F1: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route F1: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route F1: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route F1: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route F1: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route F1: target resolves",
+      "ok": true,
+      "detail": "'storage_host_from_signed_url' not a key in targets"
+    },
+    {
+      "check": "route F1: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route M1: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M1: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M1: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M1: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M1: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M1: target resolves",
+      "ok": true,
+      "detail": "'workspace_host' not a key in targets"
+    },
+    {
+      "check": "route M1: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route M2: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M2: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M2: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M2: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M2: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M2: target resolves",
+      "ok": true,
+      "detail": "'workspace_host' not a key in targets"
+    },
+    {
+      "check": "route M2: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route M3: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M3: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M3: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M3: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M3: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route M3: target resolves",
+      "ok": true,
+      "detail": "'not_forwarded' not a key in targets"
+    },
+    {
+      "check": "route M3: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route A1: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route A1: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route A1: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route A1: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route A1: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route A1: target resolves",
+      "ok": true,
+      "detail": "'not_forwarded' not a key in targets"
+    },
+    {
+      "check": "route A1: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route X: has methods",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route X: has protocol_path",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route X: has target",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route X: has policy_class",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route X: has exposed",
+      "ok": true,
+      "detail": "Task 1.3 deliverable names this field"
+    },
+    {
+      "check": "route X: target resolves",
+      "ok": true,
+      "detail": "'not_forwarded' not a key in targets"
+    },
+    {
+      "check": "route X: no hostname or URL in the row",
+      "ok": true,
+      "detail": "found []"
+    },
+    {
+      "check": "route M3: exposed is false",
+      "ok": true,
+      "detail": "exposed=False"
+    },
+    {
+      "check": "route M3: has enforcement",
+      "ok": true,
+      "detail": "a not-exposed row without enforcement is an omission, and an omission emits Gravitee's 404 instead of the protocol error format"
+    },
+    {
+      "check": "route M3: has not_exposed_because",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "route A1: exposed is false",
+      "ok": true,
+      "detail": "exposed=False"
+    },
+    {
+      "check": "route A1: has enforcement",
+      "ok": true,
+      "detail": "a not-exposed row without enforcement is an omission, and an omission emits Gravitee's 404 instead of the protocol error format"
+    },
+    {
+      "check": "route A1: has not_exposed_because",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "route X: exposed is false",
+      "ok": true,
+      "detail": "exposed=False"
+    },
+    {
+      "check": "route X: has enforcement",
+      "ok": true,
+      "detail": "a not-exposed row without enforcement is an omission, and an omission emits Gravitee's 404 instead of the protocol error format"
+    },
+    {
+      "check": "route X: has not_exposed_because",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "route S1: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S2: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S3: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S4: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S5: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S6: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S7: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='A'"
+    },
+    {
+      "check": "route S8: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='B'"
+    },
+    {
+      "check": "route S9: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='B'"
+    },
+    {
+      "check": "route S10: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='C'"
+    },
+    {
+      "check": "route F1: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='D'"
+    },
+    {
+      "check": "route M1: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='E'"
+    },
+    {
+      "check": "route M2: exposed row has a policy class",
+      "ok": true,
+      "detail": "policy_class='E'"
+    },
+    {
+      "check": "route M3: not-exposed row has a null policy class",
+      "ok": true,
+      "detail": "policy_class=None"
+    },
+    {
+      "check": "route A1: not-exposed row has a null policy class",
+      "ok": true,
+      "detail": "policy_class=None"
+    },
+    {
+      "check": "route X: not-exposed row has a null policy class",
+      "ok": true,
+      "detail": "policy_class=None"
+    },
+    {
+      "check": "class A: membership matches \u00a72.3.3",
+      "ok": true,
+      "detail": "expected ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7'], got ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7']"
+    },
+    {
+      "check": "class B: membership matches \u00a72.3.3",
+      "ok": true,
+      "detail": "expected ['S8', 'S9'], got ['S8', 'S9']"
+    },
+    {
+      "check": "class C: membership matches \u00a72.3.3",
+      "ok": true,
+      "detail": "expected ['S10'], got ['S10']"
+    },
+    {
+      "check": "class D: membership matches \u00a72.3.3",
+      "ok": true,
+      "detail": "expected ['F1'], got ['F1']"
+    },
+    {
+      "check": "class E: membership matches \u00a72.3.3",
+      "ok": true,
+      "detail": "expected ['M1', 'M2'], got ['M1', 'M2']"
+    },
+    {
+      "check": "S7 and S8 are in different classes",
+      "ok": true,
+      "detail": "if these collapse, the selector is path-only and T-05 measures the wrong class"
+    },
+    {
+      "check": "route S10: protocol_path unconfirmed flag is accountable",
+      "ok": true,
+      "detail": "needs protocol_path_unconfirmed_because and a settled_by or tests"
+    },
+    {
+      "check": "routes: every channel reference exists in channels.yaml",
+      "ok": true,
+      "detail": "unknown []"
+    },
+    {
+      "check": "channel E-1: declared routes all exist",
+      "ok": true,
+      "detail": "unknown []"
+    },
+    {
+      "check": "channel E-1: route membership agrees both ways",
+      "ok": true,
+      "detail": "channels.yaml says ['F1', 'S1', 'S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9'], route rows say ['F1', 'S1', 'S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9']"
+    },
+    {
+      "check": "channel E-2: declared routes all exist",
+      "ok": true,
+      "detail": "unknown []"
+    },
+    {
+      "check": "channel E-2: route membership agrees both ways",
+      "ok": true,
+      "detail": "channels.yaml says [], route rows say []"
+    },
+    {
+      "check": "channel E-3: declared routes all exist",
+      "ok": true,
+      "detail": "unknown []"
+    },
+    {
+      "check": "channel E-3: route membership agrees both ways",
+      "ok": true,
+      "detail": "channels.yaml says ['A1', 'M1', 'M2', 'M3'], route rows say ['A1', 'M1', 'M2', 'M3']"
+    },
+    {
+      "check": "channel I-1: declared routes all exist",
+      "ok": true,
+      "detail": "unknown []"
+    },
+    {
+      "check": "channel I-1: route membership agrees both ways",
+      "ok": true,
+      "detail": "channels.yaml says [], route rows say []"
+    },
+    {
+      "check": "channel I-2: declared routes all exist",
+      "ok": true,
+      "detail": "unknown []"
+    },
+    {
+      "check": "channel I-2: fronted channel has routes or a gap",
+      "ok": true,
+      "detail": "a Gravitee-fronted channel with no routes and no recorded gap is a hole in the perimeter description"
+    },
+    {
+      "check": "channel I-2: route membership agrees both ways",
+      "ok": true,
+      "detail": "channels.yaml says [], route rows say []"
+    },
+    {
+      "check": "gap GAP-ICEBERG: has an owner and a status",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "gap GAP-I2-ROUTE: has an owner and a status",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "route-table.yaml declares its invariants",
+      "ok": true,
+      "detail": "8 declared; this script asserts them"
+    },
+    {
+      "check": "entitlements.yaml exists (Task 1.4)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "base table test_dataset: never_shared is set",
+      "ok": true,
+      "detail": "a base table in this file that is not marked never_shared has had the \u00a711.5 decision silently reversed"
+    },
+    {
+      "check": "column test_dataset.internal_notes: withheld with a reason",
+      "ok": true,
+      "detail": "a column excluded without a recorded reason cannot be defended in the ARB package or reinstated safely"
+    },
+    {
+      "check": "at least one column is withheld",
+      "ok": true,
+      "detail": "with nothing withheld, T-04 has nothing to request and the model proves nothing -- which is exactly \u00a711.5's defect"
+    },
+    {
+      "check": "view v_entitled_t2: select list is non-empty",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "view v_entitled_t2: no '*' in the select list",
+      "ok": true,
+      "detail": "EI-2: a view defined by subtraction picks up any column the base table gains, silently and share-wide"
+    },
+    {
+      "check": "view v_entitled_t2: no withheld column in the select list",
+      "ok": true,
+      "detail": "withheld columns present: []"
+    },
+    {
+      "check": "view v_entitled_t2: base_table is declared in base_tables",
+      "ok": true,
+      "detail": "base_table='test_dataset'"
+    },
+    {
+      "check": "view v_entitled_t2: every selected column exists on the base table",
+      "ok": true,
+      "detail": "not declared: []"
+    },
+    {
+      "check": "view v_entitled_t2: has tier",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2: has dsa_ref",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2: has purpose",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2: has base_table",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2: has row_scope",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2: placeholder DSA ref says why it is one",
+      "ok": true,
+      "detail": "an unlabelled placeholder reference is indistinguishable from an executed one downstream"
+    },
+    {
+      "check": "view v_entitled_t2: where clause and row_scope agree",
+      "ok": true,
+      "detail": "where=None row_scope='ALL_ROWS'; a predicate with no label is invisible to review, and a label with no predicate filters nothing"
+    },
+    {
+      "check": "view v_entitled_t2_us: select list is non-empty",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "view v_entitled_t2_us: no '*' in the select list",
+      "ok": true,
+      "detail": "EI-2: a view defined by subtraction picks up any column the base table gains, silently and share-wide"
+    },
+    {
+      "check": "view v_entitled_t2_us: no withheld column in the select list",
+      "ok": true,
+      "detail": "withheld columns present: []"
+    },
+    {
+      "check": "view v_entitled_t2_us: base_table is declared in base_tables",
+      "ok": true,
+      "detail": "base_table='test_dataset'"
+    },
+    {
+      "check": "view v_entitled_t2_us: every selected column exists on the base table",
+      "ok": true,
+      "detail": "not declared: []"
+    },
+    {
+      "check": "view v_entitled_t2_us: has tier",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2_us: has dsa_ref",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2_us: has purpose",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2_us: has base_table",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2_us: has row_scope",
+      "ok": true,
+      "detail": "EI-4 / \u00a73.3: the COMMENT built from these fields is the only thing that travels with the shared object"
+    },
+    {
+      "check": "view v_entitled_t2_us: placeholder DSA ref says why it is one",
+      "ok": true,
+      "detail": "an unlabelled placeholder reference is indistinguishable from an executed one downstream"
+    },
+    {
+      "check": "view v_entitled_t2_us: where clause and row_scope agree",
+      "ok": true,
+      "detail": "where=\"region = 'us-east'\" row_scope='SINGLE_REGION'; a predicate with no label is invisible to review, and a label with no predicate filters nothing"
+    },
+    {
+      "check": "views: no duplicate ids",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "share awoz1227-psp7-demo-share: carries at least one object",
+      "ok": true,
+      "detail": "an empty share grants nothing and reads to the consumer as a provisioning failure"
+    },
+    {
+      "check": "share awoz1227-psp7-demo-share: every object is a view defined here",
+      "ok": true,
+      "detail": "not views in this file: []"
+    },
+    {
+      "check": "share awoz1227-psp7-demo-share: carries no base table",
+      "ok": true,
+      "detail": "\u00a711.5: this is the defect, as config"
+    },
+    {
+      "check": "share awoz1227-psp7-demo-share: has a purpose",
+      "ok": true,
+      "detail": "\u00a73.1 share isolation is per purpose, so a share without one cannot be shown to be isolated from anything"
+    },
+    {
+      "check": "share awoz1227-psp7-demo-share: remediation is explained",
+      "ok": true,
+      "detail": "a share flagged for remediation with no statement of what is wrong cannot be verified as fixed"
+    },
+    {
+      "check": "share awoz1227-psp7-t2-us-share: carries at least one object",
+      "ok": true,
+      "detail": "an empty share grants nothing and reads to the consumer as a provisioning failure"
+    },
+    {
+      "check": "share awoz1227-psp7-t2-us-share: every object is a view defined here",
+      "ok": true,
+      "detail": "not views in this file: []"
+    },
+    {
+      "check": "share awoz1227-psp7-t2-us-share: carries no base table",
+      "ok": true,
+      "detail": "\u00a711.5: this is the defect, as config"
+    },
+    {
+      "check": "share awoz1227-psp7-t2-us-share: has a purpose",
+      "ok": true,
+      "detail": "\u00a73.1 share isolation is per purpose, so a share without one cannot be shown to be isolated from anything"
+    },
+    {
+      "check": "view v_entitled_t2: some share carries it",
+      "ok": true,
+      "detail": "marked shared: true but named by no share, so the entitlement it describes reaches no recipient"
+    },
+    {
+      "check": "view v_entitled_t2_us: some share carries it",
+      "ok": true,
+      "detail": "marked shared: true but named by no share, so the entitlement it describes reaches no recipient"
+    },
+    {
+      "check": "masks and row filters are recorded as forbidden",
+      "ok": true,
+      "detail": "\u00a711.4's measurement is what licences the view-only model; without it in this file, somebody reading \u00a73.1 reintroduces masks"
+    },
+    {
+      "check": "select-star subtraction is recorded as forbidden",
+      "ok": true,
+      "detail": "this one is forbidden by THIS PROJECT, not by the platform, so it has to be written down or it comes back as a convenience"
+    },
+    {
+      "check": "invariant EI-1: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is decorative, and reads as enforced"
+    },
+    {
+      "check": "invariant EI-2: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is decorative, and reads as enforced"
+    },
+    {
+      "check": "invariant EI-3: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is decorative, and reads as enforced"
+    },
+    {
+      "check": "invariant EI-4: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is decorative, and reads as enforced"
+    },
+    {
+      "check": "invariant EI-5: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is decorative, and reads as enforced"
+    },
+    {
+      "check": "invariant EI-6: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is decorative, and reads as enforced"
+    },
+    {
+      "check": "entitlements.yaml declares its invariants",
+      "ok": true,
+      "detail": "6 declared"
+    },
+    {
+      "check": "known_incomplete EKI-1: statement, closes_when, owner",
+      "ok": true,
+      "detail": "missing []"
+    },
+    {
+      "check": "known_incomplete EKI-2: statement, closes_when, owner",
+      "ok": true,
+      "detail": "missing []"
+    },
+    {
+      "check": "entitlements.yaml records what it does not establish",
+      "ok": true,
+      "detail": "the provider-side/recipient-side split is the whole of EKI-1; without it, a provider-side pass reads as Task 1.4's full verify clause"
+    },
+    {
+      "check": "recipients.yaml exists (Task 1.5)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipients: at least one is defined",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "token_policy is labelled a prototype default, not a policy",
+      "ok": true,
+      "detail": "an unlabelled default becomes a decision by being found in a file; OD-5 is OPEN and owned by Data Governance"
+    },
+    {
+      "check": "token_policy names its decision owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "token_policy carries all five OD-5 sub-decisions",
+      "ok": true,
+      "detail": "5 present; \u00a73.1.1 lists five"
+    },
+    {
+      "check": "OD5-1: states whether it is genuinely open",
+      "ok": true,
+      "detail": "a sub-decision that does not say whether it is open cannot be escalated or closed"
+    },
+    {
+      "check": "OD5-1: carries a question",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "OD5-2: states whether it is genuinely open",
+      "ok": true,
+      "detail": "a sub-decision that does not say whether it is open cannot be escalated or closed"
+    },
+    {
+      "check": "OD5-2: carries a question",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "OD5-3: states whether it is genuinely open",
+      "ok": true,
+      "detail": "a sub-decision that does not say whether it is open cannot be escalated or closed"
+    },
+    {
+      "check": "OD5-3: carries a question",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "OD5-4: states whether it is genuinely open",
+      "ok": true,
+      "detail": "a sub-decision that does not say whether it is open cannot be escalated or closed"
+    },
+    {
+      "check": "OD5-4: carries a question",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "OD5-5: states whether it is genuinely open",
+      "ok": true,
+      "detail": "a sub-decision that does not say whether it is open cannot be escalated or closed"
+    },
+    {
+      "check": "OD5-5: carries a question",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "OD5-2: configured token lifetime is inside the documented one-year platform bound",
+      "ok": true,
+      "detail": "local_days=7; the platform maximum is 365 days"
+    },
+    {
+      "check": "sign_in: exactly one branch is built",
+      "ok": true,
+      "detail": "1 branches marked BUILT; one branch built completely is what docs/13 \u00a713.2 asks for"
+    },
+    {
+      "check": "sign_in: the unbuilt branch records what changes if chosen",
+      "ok": true,
+      "detail": "without it, OD-5 is a redesign rather than a substitution"
+    },
+    {
+      "check": "sign_in: the unbuilt branch records why it is not built",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "platform_facts: at least five are recorded",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "platform fact 'A recipient bearer token is valid for at...': provenance is explicit",
+      "ok": true,
+      "detail": "status=DOCUMENTED_NOT_MEASURED; must be one of ['DOCUMENTED_NOT_MEASURED', 'MEASURED', 'PARTIALLY_MEASURED'] -- 'the docs say' and 'we watched it' are different strengths of claim and the \u00a713.2 ask must not blur them"
+    },
+    {
+      "check": "platform fact 'A recipient holds at most two tokens (on...': provenance is explicit",
+      "ok": true,
+      "detail": "status=DOCUMENTED_NOT_MEASURED; must be one of ['DOCUMENTED_NOT_MEASURED', 'MEASURED', 'PARTIALLY_MEASURED'] -- 'the docs say' and 'we watched it' are different strengths of claim and the \u00a713.2 ask must not blur them"
+    },
+    {
+      "check": "platform fact 'The activation link yields the credentia...': provenance is explicit",
+      "ok": true,
+      "detail": "status=PARTIALLY_MEASURED; must be one of ['DOCUMENTED_NOT_MEASURED', 'MEASURED', 'PARTIALLY_MEASURED'] -- 'the docs say' and 'we watched it' are different strengths of claim and the \u00a713.2 ask must not blur them"
+    },
+    {
+      "check": "partially-measured fact names both halves",
+      "ok": true,
+      "detail": "a half-measured fact that does not say which half is which gets quoted as a whole one"
+    },
+    {
+      "check": "platform fact 'Creating a TOKEN recipient mints the act...': provenance is explicit",
+      "ok": true,
+      "detail": "status=MEASURED; must be one of ['DOCUMENTED_NOT_MEASURED', 'MEASURED', 'PARTIALLY_MEASURED'] -- 'the docs say' and 'we watched it' are different strengths of claim and the \u00a713.2 ask must not blur them"
+    },
+    {
+      "check": "platform fact 'Recipient IP access lists are enforced a...': provenance is explicit",
+      "ok": true,
+      "detail": "status=MEASURED; must be one of ['DOCUMENTED_NOT_MEASURED', 'MEASURED', 'PARTIALLY_MEASURED'] -- 'the docs say' and 'we watched it' are different strengths of claim and the \u00a713.2 ask must not blur them"
+    },
+    {
+      "check": "platform fact 'A recipient is keyed by its sharing iden...': provenance is explicit",
+      "ok": true,
+      "detail": "status=MEASURED; must be one of ['DOCUMENTED_NOT_MEASURED', 'MEASURED', 'PARTIALLY_MEASURED'] -- 'the docs say' and 'we watched it' are different strengths of claim and the \u00a713.2 ask must not blur them"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: name is unique in this file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient psp7-demo-recipient: authentication_type is declared",
+      "ok": true,
+      "detail": "the authentication type IS the OD-5 branch"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: carries a DSA reference",
+      "ok": true,
+      "detail": "\u00a73.3 purpose limitation"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: the DSA reference's status is declared",
+      "ok": true,
+      "detail": "a placeholder that does not say so gets quoted as an executed agreement reference"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: declares its purpose",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient psp7-demo-recipient: declares its channel",
+      "ok": true,
+      "detail": "\u00a73.1's isolation rule has a different answer per channel, so a recipient with no channel cannot be checked against it"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: has at least one grant",
+      "ok": true,
+      "detail": "a recipient with no grant can prove nothing -- a denial against it would be a denial either way"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: grant target awoz1227-psp7-demo-share is defined in entitlements.yaml",
+      "ok": true,
+      "detail": "a grant to a share the entitlement model does not define is a hole with no column list behind it"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: grant on awoz1227-psp7-demo-share names its privileges",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient psp7-demo-recipient: ip_access_list mode is declared",
+      "ok": true,
+      "detail": "an absent list and a deliberately-absent list are different configurations and only one of them is a finding"
+    },
+    {
+      "check": "recipient psp7-demo-recipient: records why no list is applied",
+      "ok": true,
+      "detail": "without the reason, the next reader 'fixes' it and turns an entitlement test into a network test that passes for the wrong reason"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: name is unique in this file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: authentication_type is declared",
+      "ok": true,
+      "detail": "the authentication type IS the OD-5 branch"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: carries a DSA reference",
+      "ok": true,
+      "detail": "\u00a73.3 purpose limitation"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: the DSA reference's status is declared",
+      "ok": true,
+      "detail": "a placeholder that does not say so gets quoted as an executed agreement reference"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: declares its purpose",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: declares its channel",
+      "ok": true,
+      "detail": "\u00a73.1's isolation rule has a different answer per channel, so a recipient with no channel cannot be checked against it"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: has at least one grant",
+      "ok": true,
+      "detail": "a recipient with no grant can prove nothing -- a denial against it would be a denial either way"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: grant target awoz1227-psp7-t2-us-share is defined in entitlements.yaml",
+      "ok": true,
+      "detail": "a grant to a share the entitlement model does not define is a hole with no column list behind it"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: grant on awoz1227-psp7-t2-us-share names its privileges",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: ip_access_list mode is declared",
+      "ok": true,
+      "detail": "an absent list and a deliberately-absent list are different configurations and only one of them is a finding"
+    },
+    {
+      "check": "recipient awoz1227-psp7-t2-us-recipient: records why no list is applied",
+      "ok": true,
+      "detail": "without the reason, the next reader 'fixes' it and turns an entitlement test into a network test that passes for the wrong reason"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: name is unique in this file",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: authentication_type is declared",
+      "ok": true,
+      "detail": "the authentication type IS the OD-5 branch"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: carries a DSA reference",
+      "ok": true,
+      "detail": "\u00a73.3 purpose limitation"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: the DSA reference's status is declared",
+      "ok": true,
+      "detail": "a placeholder that does not say so gets quoted as an executed agreement reference"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: declares its purpose",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: declares its channel",
+      "ok": true,
+      "detail": "\u00a73.1's isolation rule has a different answer per channel, so a recipient with no channel cannot be checked against it"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: has at least one grant",
+      "ok": true,
+      "detail": "a recipient with no grant can prove nothing -- a denial against it would be a denial either way"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: grant target awoz1227-psp7-demo-share is defined in entitlements.yaml",
+      "ok": true,
+      "detail": "a grant to a share the entitlement model does not define is a hole with no column list behind it"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: grant on awoz1227-psp7-demo-share names its privileges",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: ip_access_list mode is declared",
+      "ok": true,
+      "detail": "an absent list and a deliberately-absent list are different configurations and only one of them is a finding"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: applied list is non-empty",
+      "ok": true,
+      "detail": "an APPLIED list with no addresses denies everything and is indistinguishable from a misconfiguration"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: applied list records why these addresses",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: applied list uses documentation-range addresses only",
+      "ok": true,
+      "detail": "RFC 5737 ranges are chosen so the list can never accidentally contain the operator's own egress address, which would turn T-02's deny test into an allow test while still reporting a pass"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: the deny test is specified in two phases",
+      "ok": true,
+      "detail": "one observation cannot attribute a denial: 'denied while the list excludes me' is also what a broken credential, an unactivated token and a typo'd share name look like"
+    },
+    {
+      "check": "recipient awoz1227-t02-iplist-recipient: the deny test records its status honestly",
+      "ok": true,
+      "detail": "a specified procedure is not a run one"
+    },
+    {
+      "check": "unmanaged recipients: a policy is declared",
+      "ok": true,
+      "detail": "B-19: a leftover is labelled, not erased -- and a probe object still needed by a probe must not be removed by an applier that does not know what needs it"
+    },
+    {
+      "check": "unmanaged recipients: the policy carries its reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "leftover awoz1227_demo_recipientashu: origin is named",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "leftover awoz1227_demo_recipientashu: last measured reachability is recorded with its evidence",
+      "ok": true,
+      "detail": "membership is not reachability (B-31); a leftover recorded without one of them is a claim with no measurement"
+    },
+    {
+      "check": "leftover awoz1227_p18_primary_recipient: origin is named",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "leftover awoz1227_p18_primary_recipient: last measured reachability is recorded with its evidence",
+      "ok": true,
+      "detail": "membership is not reachability (B-31); a leftover recorded without one of them is a claim with no measurement"
+    },
+    {
+      "check": "share_isolation: the CONOPS text is quoted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "share_isolation: the finding is stated",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "share_isolation: measured and unmeasured halves are separated",
+      "ok": true,
+      "detail": "the D2D refusal is measured (B-29) and the D2O permission is not; a single verdict over both would be a guess wearing evidence"
+    },
+    {
+      "check": "share_isolation: names what v1.6 must change",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "recipients.yaml declares its invariants",
+      "ok": true,
+      "detail": "7 declared"
+    },
+    {
+      "check": "invariant RI-1: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-1: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-2: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-2: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-3: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-3: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-4: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-4: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-5: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-5: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-6: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-6: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-7: names what checks it",
+      "ok": true,
+      "detail": "an invariant with no checker is a wish"
+    },
+    {
+      "check": "invariant RI-7: carries a reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "invariant RI-7 exists: the activation link never reaches stdout or the evidence file",
+      "ok": true,
+      "detail": "whoever holds the one-time link holds the credential, and stdout reaches scrollback, screen shares, CI logs and chat transcripts"
+    },
+    {
+      "check": "recipients.yaml records what it does not establish",
+      "ok": true,
+      "detail": "6 recorded"
+    },
+    {
+      "check": "RKI-1: names an owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-1: names what closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-2: names an owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-2: names what closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-3: names an owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-3: names what closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-5: names an owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-5: names what closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-6: names an owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-6: names what closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-4: names an owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "RKI-4: names what closes it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "known_incomplete: the consumer-side gap is recorded",
+      "ok": true,
+      "detail": "everything scripts/27 checks is provider-side, exactly as Task 1.4's checks were; RKI-1 is what stops that being read as a consumer-side pass"
+    }
+  ],
+  "verdict": "CAC_CONFIG_CONSISTENT"
+}

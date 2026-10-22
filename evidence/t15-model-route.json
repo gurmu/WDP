@@ -1,0 +1,205 @@
+{
+  "test": "T-15",
+  "epic_task": "E1 Task 1.9 part 2",
+  "risk": "R12a",
+  "at": "2026-10-21T21:04:01.807813Z",
+  "route": {
+    "context_path": "/ai-gateway-demo",
+    "target": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+    "model_path": "/serving-endpoints/databricks-gpt-oss-20b/invocations",
+    "path_operator": "EQUALS",
+    "methods": [
+      "POST"
+    ],
+    "upstream_host": "dbc-0c6ebc56-563d.cloud.databricks.com",
+    "known_incomplete": [
+      "AI-1",
+      "AI-2",
+      "AI-3",
+      "AI-4",
+      "AI-7",
+      "AI-8",
+      "AI-5",
+      "AI-6"
+    ]
+  },
+  "urls": {
+    "gateway": "http://localhost:8082/ai-gateway-demo/serving-endpoints/databricks-gpt-oss-20b/invocations",
+    "direct": "https://dbc-0c6ebc56-563d.cloud.databricks.com/serving-endpoints/databricks-gpt-oss-20b/invocations",
+    "edge_base_provenance": "ENV_EXPLICIT",
+    "edge_base_note": null
+  },
+  "phases": {
+    "1_direct_control": {
+      "url": "https://dbc-0c6ebc56-563d.cloud.databricks.com/serving-endpoints/databricks-gpt-oss-20b/invocations",
+      "status": 200,
+      "headers_sent": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "shape": {
+        "parsed": true,
+        "top_level_keys": [
+          "choices",
+          "created",
+          "id",
+          "model",
+          "object",
+          "usage"
+        ],
+        "choice_keys": [
+          "finish_reason",
+          "index",
+          "logprobs",
+          "message"
+        ],
+        "finish_reason": "stop",
+        "content_type": "list",
+        "content_block_types": [
+          "reasoning",
+          "text"
+        ],
+        "content_is_array_of_typed_blocks": true,
+        "schema_note": "route-table.yaml M1.prototype_observed flagged this: `content` is an array of typed blocks, not a string, so the class E request/response schema must validate the array form. Confirmed here."
+      },
+      "purpose": "Establishes that the model answers, the body shape is right and the credential works. Every later phase is unattributable without this."
+    },
+    "2_gateway_no_credential": {
+      "url": "http://localhost:8082/ai-gateway-demo/serving-endpoints/databricks-gpt-oss-20b/invocations",
+      "status": 200,
+      "headers_sent": [
+        "Content-Type"
+      ],
+      "authorization_header_sent": false,
+      "responder": {
+        "round_trip_headers": true,
+        "vocabulary": "UNRECOGNISED",
+        "responder": "NOT_A_REFUSAL",
+        "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+      },
+      "shape": {
+        "parsed": true,
+        "top_level_keys": [
+          "choices",
+          "created",
+          "id",
+          "model",
+          "object",
+          "usage"
+        ],
+        "choice_keys": [
+          "finish_reason",
+          "index",
+          "logprobs",
+          "message"
+        ],
+        "finish_reason": "stop",
+        "content_type": "list",
+        "content_block_types": [
+          "reasoning",
+          "text"
+        ],
+        "content_is_array_of_typed_blocks": true,
+        "schema_note": "route-table.yaml M1.prototype_observed flagged this: `content` is an array of typed blocks, not a string, so the class E request/response schema must validate the array form. Confirmed here."
+      },
+      "purpose": "The caller supplied NO credential. A 200 can only mean the gateway supplied one. This is R12a."
+    },
+    "3_gateway_invalid_caller_token": {
+      "url": "http://localhost:8082/ai-gateway-demo/serving-endpoints/databricks-gpt-oss-20b/invocations",
+      "status": 200,
+      "headers_sent": [
+        "Authorization",
+        "Content-Type"
+      ],
+      "caller_token": "deliberately invalid, never a real credential",
+      "responder": {
+        "round_trip_headers": true,
+        "vocabulary": "UNRECOGNISED",
+        "responder": "NOT_A_REFUSAL",
+        "meaning": "A 2xx. There is no refusing party to attribute, and this function must not invent one. B-46."
+      },
+      "shape": {
+        "parsed": true,
+        "top_level_keys": [
+          "choices",
+          "created",
+          "id",
+          "model",
+          "object",
+          "usage"
+        ],
+        "choice_keys": [
+          "finish_reason",
+          "index",
+          "logprobs",
+          "message"
+        ],
+        "finish_reason": "stop",
+        "content_type": "list",
+        "content_block_types": [
+          "reasoning",
+          "text"
+        ],
+        "content_is_array_of_typed_blocks": true,
+        "schema_note": "route-table.yaml M1.prototype_observed flagged this: `content` is an array of typed blocks, not a string, so the class E request/response schema must validate the array form. Confirmed here."
+      },
+      "purpose": "Distinguishes REPLACE from APPEND. If this refuses while phase 2 succeeds, the policy is leaving the caller's header in place and a later 200 would be the caller's own credential doing the work -- B-40's silent negative with the sign flipped."
+    },
+    "4_scope_boundary": {
+      "endpoint_listing": {
+        "listed": true,
+        "endpoint_count": 12,
+        "approved_model": "databricks-gpt-oss-20b",
+        "alternative_chosen": "databricks-gpt-oss-120b",
+        "why": "Phase 4 needs a path that EXISTS upstream but is NOT the approved model, so a refusal through the gateway is attributable to the selector rather than to the path being absent."
+      },
+      "purpose": "The gateway holds a PAT with full workspace entitlements and gives it to anonymous callers. The flow selector is the only thing scoping that. This phase is whether route-table.yaml's 'not a wildcard over /serving-endpoints' is true of the RUNNING system.",
+      "alternative_model": "databricks-gpt-oss-120b",
+      "through_gateway_no_credential": {
+        "url": "http://localhost:8082/ai-gateway-demo/serving-endpoints/databricks-gpt-oss-120b/invocations",
+        "status": 403,
+        "responder": {
+          "round_trip_headers": true,
+          "vocabulary": "EDGE_RESOURCE_FILTERING",
+          "responder": "EDGE_RESOURCE_FILTERING_POLICY",
+          "meaning": "Gravitee's resource-filtering policy refused this request by path, in its own words. A POSITIVE identification of one named policy, not the catch-all (B-46). This policy decides on the request PATH alone -- it says nothing about the caller's identity, so a refusal here is not an authorisation result and must not be read as one.",
+          "decided_on": "REQUEST_PATH_ONLY"
+        },
+        "shape": {
+          "parsed": true,
+          "top_level_keys": [
+            "http_status_code",
+            "message"
+          ],
+          "http_status_code": "403",
+          "message": "You're not allowed to access this resource"
+        }
+      },
+      "direct_with_real_pat": {
+        "url": "https://dbc-0c6ebc56-563d.cloud.databricks.com/serving-endpoints/databricks-gpt-oss-120b/invocations",
+        "status": 200,
+        "note": "Proves the alternative path is REAL. Without this, a refusal through the gateway could be a non-existent endpoint rather than a scope boundary."
+      },
+      "verdict": "SCOPE_HELD_NO_INJECTION_OUTSIDE_THE_APPROVED_PATH",
+      "why": "The alternative path answers 200 directly with a real credential but returned 403 through the gateway with none, so the gateway did not inject for it. The selector is doing the scoping the route table claims."
+    }
+  },
+  "verdict": "R12A_CONFIRMED_INJECTION_REPLACES_AND_IS_SCOPED",
+  "what_a_pass_does_not_mean": {
+    "r12b": "Not measured. The gateway holds a long-lived secret to do this. R12b asks whether it can avoid that, and nothing here addresses it.",
+    "conops_3_2": "NOT demonstrated. 3.2 specifies a per-consumer service principal granted only that consumer's assets. This injects a personal access token: long-lived, bound to a human, carrying full entitlements. The mechanism is the same; the security property is absent. scripts/30 AI-3.",
+    "t05": "The class E rate limit is on this flow and is not exercised. Note AI-1: the route REPLACES the Authorization header the limit keys on, so every caller shares one bucket -- the opposite of the per-consumer limit 2.3 describes.",
+    "t07": "No header-hygiene claim is made about this route.",
+    "t16": "No MCP path is touched. M3's deny is a separate test."
+  },
+  "carried_from_the_generator": [
+    "AI-1",
+    "AI-2",
+    "AI-3",
+    "AI-4",
+    "AI-7",
+    "AI-8",
+    "AI-5",
+    "AI-6"
+  ]
+}

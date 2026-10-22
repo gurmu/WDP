@@ -1,0 +1,185 @@
+{
+  "probe": "d2d-ingress-prereqs",
+  "task": "E1 Task 1.10 -> T-19",
+  "run_at": "2026-10-19T21:38:37.540536Z",
+  "gates": [
+    "T-19 (D2D ingress)"
+  ],
+  "direction": {
+    "provider": "glovashu (https://dbc-519df5ad-574f.cloud.databricks.com)",
+    "recipient": "primary (https://dbc-0c6ebc56-563d.cloud.databricks.com)",
+    "primary_sharing_identifier": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+    "correction": "evidence/capability-baseline-d2d.json tested the OPPOSITE direction: its recipient was created on the primary naming glovashu, which demonstrates the primary as provider (channel E-2, egress). docs/epics/E1's gate table cites it as clearing T-19. This probe tests the ingress direction that T-19 actually needs."
+  },
+  "checks": {
+    "substrate": {
+      "share_source_table": {
+        "full_name": "awoz1227_glovashu.opensharing_provider.test_dataset",
+        "lookup": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "table_type": "MANAGED",
+        "data_source_format": "DELTA"
+      },
+      "provider_compute": {
+        "verdict": "PERMITTED",
+        "warehouse_id": "fa35b04d79850a79",
+        "warehouse_name": "Serverless Starter Warehouse",
+        "state": "STOPPED",
+        "means": "The provider side can run SQL, so T-19's refresh half (append rows, re-read as recipient) is runnable."
+      }
+    },
+    "provider_role": {
+      "steps": {
+        "create_share": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "add_table_to_share": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "create_recipient_for_primary": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": "",
+          "direction_note": "Recipient created ON GLOVASHU naming the PRIMARY as consumer. capability-baseline-d2d.json proved the reverse direction only (recipient on primary naming glovashu), which is channel E-2."
+        },
+        "grant_share_to_recipient": {
+          "status": 200,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": "",
+          "endpoint": "/api/2.1/unity-catalog/shares/awoz1227_p15_share/permissions",
+          "namespace_note": "Share-scoped permissions endpoint, which resolves `principal` against the metastore's RECIPIENTS. The generic /permissions/share/{name} endpoint resolves it against account identities and 404s on a valid recipient name."
+        },
+        "grant_readback": {
+          "status": 200,
+          "privilege_assignments": [
+            {
+              "principal": "awoz1227_p15_recipient",
+              "privileges": [
+                "SELECT"
+              ]
+            }
+          ],
+          "recipient_present": true,
+          "privileges": [
+            "SELECT"
+          ],
+          "verdict": "GRANT_IN_EFFECT",
+          "means": "Reads the share's permissions back from the provider. GRANT_NOT_IN_EFFECT after a 200 PATCH means the grant was accepted and not applied, which would fully explain an empty provider list on the recipient side."
+        },
+        "share_contents_readback": {
+          "status": 200,
+          "objects": [
+            "awoz1227_glovashu.opensharing_provider.test_dataset"
+          ],
+          "statuses": [
+            "ACTIVE"
+          ],
+          "verdict": "SHARE_NON_EMPTY",
+          "means": "A share whose ADD returned 200 but which reads back empty would explain the same negative. Object status matters too: ACTIVE vs PERMISSION_DENIED tells us whether the provider can actually serve the object it listed."
+        },
+        "recipient_readback": {
+          "status": 200,
+          "data_recipient_global_metastore_id": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+          "expected": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+          "matches_primary": true,
+          "authentication_type": "DATABRICKS",
+          "activated": null,
+          "means": "A recipient whose global metastore id does not match the primary's names a different metastore. The grant would still succeed and the share would still be invisible here -- indistinguishable from a visibility failure without this check."
+        }
+      }
+    },
+    "recipient_visibility": {
+      "list_providers": {
+        "status": 200,
+        "verdict": "PERMITTED",
+        "error_code": "",
+        "message": "",
+        "providers_visible": [],
+        "polling": {
+          "attempts": 4,
+          "sleep_seconds": 5,
+          "elapsed_seconds": 16.5,
+          "stopped_because": "attempts exhausted"
+        },
+        "empty_list_note": "The call succeeded and returned no providers after 4 polls over 16.5s. That is a real observation, not a failed call, and propagation delay under 16.5s is excluded. On D2D the provider appears only once the far side has granted a share to a recipient naming this metastore.",
+        "upstream_state": {
+          "add_table_to_share": "PERMITTED",
+          "grant_share_to_recipient": "PERMITTED",
+          "grant_readback": "GRANT_IN_EFFECT",
+          "share_contents_readback": "SHARE_NON_EMPTY",
+          "recipient_identifier_matches": true
+        },
+        "remaining_confound": null,
+        "negative_is_clean": "Every upstream precondition verified by read-back: the share holds the table, the grant is in effect, and the recipient names THIS metastore. Propagation under the polling bound is excluded. The provider list is therefore empty for a reason that is not explained by anything this probe controls -- which makes it a finding to chase, not a step to retry."
+      }
+    },
+    "second_identity": {
+      "steps": {
+        "create_service_principal": {
+          "status": 201,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": "",
+          "application_id": "15b1ba7a-0ed8-4876-94cc-dcdf179fe064"
+        },
+        "create_group": {
+          "status": 201,
+          "verdict": "PERMITTED",
+          "error_code": "",
+          "message": ""
+        },
+        "obtain_credential_for_principal": {
+          "status": 403,
+          "verdict": "REFUSED_BY_PRIVILEGE",
+          "error_code": "PERMISSION_DENIED",
+          "message": "User 15b1ba7a-0ed8-4876-94cc-dcdf179fe064 does not have permission to use tokens."
+        },
+        "account_oauth_secret_route": {
+          "verdict": "NOT_ATTEMPTED",
+          "means": "Minting an OAuth M2M secret needs account-level credentials against accounts.cloud.databricks.com. .env holds workspace tokens only, so this route was not tried. If the workspace route above is refused, this is the next thing to test before declaring (B) impossible."
+        }
+      },
+      "verdict": "IDENTITY_WITHOUT_CREDENTIAL",
+      "means": "A second principal can be created but not authenticated as from here. T-19's denial (B) must be reported NOT_RUN with this named cause. Do NOT substitute our own identity with a narrower grant -- that is defect D-2. Denial (A), an object outside the share, remains runnable and tests the provider's control surface."
+    }
+  },
+  "cleanup": {
+    "verdict": "SKIPPED_BY_FLAG",
+    "left_in_place": {
+      "glovashu_share": "awoz1227_p15_share",
+      "glovashu_recipient": "awoz1227_p15_recipient",
+      "primary_service_principal": "77080905908953",
+      "primary_group": "2120591255378296"
+    },
+    "means": "--keep was passed, so the probe's subjects survive for inspection in the two consoles. These are live objects in both workspaces and must be removed by hand or by a run without --keep."
+  },
+  "conclusion": {
+    "ingress_provider_chain": "PERMITTED",
+    "ingress_chain_steps": {
+      "create_share": "PERMITTED",
+      "add_table_to_share": "PERMITTED",
+      "create_recipient_for_primary": "PERMITTED",
+      "grant_share_to_recipient": "PERMITTED"
+    },
+    "second_identity": "IDENTITY_WITHOUT_CREDENTIAL",
+    "t19_runnable_halves": {
+      "share_and_entitled_read": "RUNNABLE",
+      "denial_A_object_outside_share": "RUNNABLE",
+      "denial_B_principal_without_grant": "NOT_RUN",
+      "refresh": "RUNNABLE"
+    },
+    "means": "Capability only. Nothing here is a T-19 result -- it decides which halves of T-19 produce evidence and which are reported NOT_RUN with a named missing capability."
+  }
+}

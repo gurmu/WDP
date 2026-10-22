@@ -1,0 +1,117 @@
+{
+  "script": "16_enable_glovashu_external_sharing",
+  "task": "E1 Task 1.10 -> T-19 prerequisite",
+  "run_at": "2026-10-19T00:47:32.680048Z",
+  "mode": "apply",
+  "setting": "delta_sharing_scope",
+  "wanted_on_provider": "INTERNAL_AND_EXTERNAL",
+  "before": {
+    "primary": {
+      "label": "primary",
+      "host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+      "status": 200,
+      "metastore_id": "48cda780-1dc7-459d-bee0-77abde9af938",
+      "name": "metastore_aws_us_east_2",
+      "region": "us-east-2",
+      "global_metastore_id": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+      "scope": "INTERNAL_AND_EXTERNAL",
+      "scope_observed": true,
+      "recipient_token_lifetime": 86400,
+      "scope_source": "metastore_summary"
+    },
+    "glovashu": {
+      "label": "glovashu",
+      "host": "https://dbc-519df5ad-574f.cloud.databricks.com",
+      "status": 200,
+      "metastore_id": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+      "name": "metastore_aws_us_east_2",
+      "region": "us-east-2",
+      "global_metastore_id": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+      "scope": "INTERNAL",
+      "scope_observed": true,
+      "recipient_token_lifetime": null,
+      "scope_source": "metastore_summary"
+    }
+  },
+  "discriminator": {
+    "verdict": "CONFIGURATION_DIFFERS_AT_SAME_TIER",
+    "means": "Both metastores are Free Edition in us-east-2. The primary is INTERNAL_AND_EXTERNAL and glovashu is INTERNAL. The capability is therefore available at this tier and probe 15's 403 is an unset switch. This is the one-variable control for B-18.",
+    "corroboration": {
+      "field": "delta_sharing_recipient_token_lifetime_in_seconds",
+      "primary": 86400,
+      "glovashu": null,
+      "means": "The side that has external sharing enabled also carries a recipient token lifetime; the side that does not carries none. That is independent corroboration that glovashu has never had the feature switched on, rather than having it switched on and then restricted.",
+      "decision_exposed": "Recipient tokens are the credential that external recipients authenticate with. Their lifetime is therefore a security default the CONOPS must set explicitly, not inherit. Enabling the scope without choosing it is how a non-expiring external credential gets created by omission."
+    }
+  },
+  "apply": {
+    "status": 200,
+    "request": {
+      "delta_sharing_scope": "INTERNAL_AND_EXTERNAL",
+      "delta_sharing_recipient_token_lifetime_in_seconds": 86400
+    },
+    "fields_changed": [
+      "delta_sharing_recipient_token_lifetime_in_seconds",
+      "delta_sharing_scope"
+    ],
+    "verdict": "APPLIED"
+  },
+  "after": {
+    "label": "glovashu",
+    "host": "https://dbc-519df5ad-574f.cloud.databricks.com",
+    "status": 200,
+    "metastore_id": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+    "name": "metastore_aws_us_east_2",
+    "region": "us-east-2",
+    "global_metastore_id": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d",
+    "scope": "INTERNAL_AND_EXTERNAL",
+    "scope_observed": true,
+    "recipient_token_lifetime": 86400
+  },
+  "verified": {
+    "scope_now": "INTERNAL_AND_EXTERNAL",
+    "verdict": "ENABLED_AND_VERIFIED",
+    "means": "A 200 on the PATCH is not the finding; the re-read is. An update that returns 200 and leaves the setting unchanged is the 12.9 shape with a success code on it.",
+    "recipient_token_lifetime": 86400,
+    "credential_expiry": {
+      "verdict": "EXPIRY_SET",
+      "seconds": 86400
+    }
+  },
+  "prior_attempts": [
+    {
+      "run_at": "2026-10-19T00:3x:xxZ (exact stamp lost with the overwritten file)",
+      "mode": "apply",
+      "apply": {
+        "status": 400,
+        "request": {
+          "delta_sharing_scope": "INTERNAL_AND_EXTERNAL"
+        },
+        "fields_changed": [
+          "delta_sharing_scope"
+        ],
+        "verdict": "REFUSED",
+        "error": "{'error_code': 'INVALID_PARAMETER_VALUE', 'message': 'UpdateMetastore Missing required field: delta_sharing_recipient_token_lifetime_in_seconds must be set.', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorIn",
+        "error_truncated": true,
+        "second_field_required": {
+          "field": "delta_sharing_recipient_token_lifetime_in_seconds",
+          "means": "The platform REFUSES to enable external Delta Sharing unless a recipient token lifetime is supplied in the same call. Enabling it is a two-field change and the second field is an external credential expiry."
+        }
+      },
+      "verified": {
+        "scope_now": "INTERNAL",
+        "verdict": "NOT_IN_EFFECT"
+      },
+      "provenance": "RECOVERED_FROM_TERMINAL_TRANSCRIPT",
+      "provenance_note": "This attempt was captured by the script but its evidence file was overwritten by the succeeding run before carry-forward existed (B-19). The status, request body and error text are transcribed verbatim from the operator's terminal; the error string is truncated at 220 chars by the script's own printer and the run_at stamp could not be recovered. Later runs record this block live."
+    }
+  ],
+  "prior_attempts_note": "Earlier runs of this script, newest last. Kept because the refusals are evidence (B-19); a file showing only the successful call would misrepresent what enabling this took.",
+  "platform_enforced_control": {
+    "finding": "EXPIRY_IS_MANDATORY_NOT_DEFAULTED",
+    "means": "Databricks rejected the one-field enable with 400 INVALID_PARAMETER_VALUE naming the token lifetime. The risk flagged before the attempt -- external sharing switched on with a non-expiring recipient credential, created by omission -- is therefore not reachable through this API. The platform forces the expiry to be chosen.",
+    "consequence_for_this_script": "The NO_EXPIRY_SET warning branch in verified.credential_expiry cannot fire via the API route. It is retained for the account-console route and for API versions that may relax the requirement, but it must not be read as a passed check -- an unreachable guard that prints nothing forever is itself a silent negative (12.9).",
+    "chosen_value_seconds": 86400,
+    "chosen_how": "Matched to the primary metastore's existing lifetime rather than picked, so the two sides stay comparable; recorded as a decision the CONOPS owner should ratify, not as a default."
+  }
+}

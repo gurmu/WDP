@@ -1,0 +1,250 @@
+{
+  "test_id": "T-02",
+  "description": "Call straight to the Databricks sharing endpoint with a valid token (CONOPS AC1)",
+  "task": "E1 Task 1.6",
+  "date": "2026-10-21T13:39:48.108644Z",
+  "recipient": "awoz1227-t02-iplist-recipient",
+  "share": "awoz1227-psp7-demo-share",
+  "credential": {
+    "endpoint": "https://a7066515-4fb1-43af-8bb3-d89cb4635809.opensharing.us-east-2.cloud.databricks.com/api/2.0/opensharing/metastores/48cda780-1dc7-459d-bee0-77abde9af938",
+    "endpoint_host": "a7066515-4fb1-43af-8bb3-d89cb4635809.opensharing.us-east-2.cloud.databricks.com",
+    "endpoint_port": null,
+    "share_credentials_version": 1,
+    "fields_present": [
+      "bearerToken",
+      "endpoint",
+      "expirationTime",
+      "icebergEndpoint",
+      "shareCredentialsVersion"
+    ],
+    "bearer_token_length": 64,
+    "bearer_token_sha256_12": "5b13e9ad9a76",
+    "expiration_time": "2026-10-28T06:27:35.615Z"
+  },
+  "declared_allow_list": [
+    "203.0.113.5/32"
+  ],
+  "procedure_source": "iac/config/recipients.yaml -> recipients[] awoz1227-t02-iplist-recipient.t02_procedure (specified before this test was written, implemented here)",
+  "why_two_phases": "A denial is not attributable on its own. A broken credential, an unactivated token, a missing grant, a typo'd share name and an expired token all produce the same observation at the client. The positive control in phase 1 is what makes phase 2's denial mean the allow-list.",
+  "phases": {
+    "phase_0_as_declared": {
+      "list_on_platform_before_any_mutation": [
+        "203.0.113.5/32"
+      ],
+      "list_read_status": 200,
+      "observation": {
+        "label": "phase_0_as_declared",
+        "at": "2026-10-21T13:39:48.742218Z",
+        "outcome": "DENIED",
+        "http_status": 403,
+        "error_code": "PERMISSION_DENIED",
+        "error_message": "Permission denied due to IP address (72.83.83.x/24#sha12=0af7da533bad) not in IP Access List.",
+        "steps": {
+          "list_shares": {
+            "status": 403,
+            "shares_visible": [],
+            "body": "{\"error_code\":\"PERMISSION_DENIED\",\"message\":\"Permission denied due to IP address (72.83.83.x/24#sha12=0af7da533bad) not in IP Access List.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"72774b96-13c6-4906-8aa6-715d55d24985\",\"serving_data\":\"\"}]}"
+          },
+          "list_tables": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          },
+          "table_metadata": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          },
+          "query": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          }
+        },
+        "share_granted_visible": false,
+        "data_served": false
+      },
+      "means": "The before-picture, taken against live state before anything is changed (B-33b). If this is DENIED the list may be enforced -- or six other things may be wrong. If it SUCCEEDED the list is not enforced at all, which is the finding, and phases 1 and 2 then measure how far that goes."
+    },
+    "phase_1_operator_allowed": {
+      "label": "phase_1_operator_allowed",
+      "patch_status": 200,
+      "requested": [
+        "72.83.83.x/24#sha12=0af7da533bad"
+      ],
+      "wait_bound_seconds": 150,
+      "attempts": [
+        {
+          "after_seconds": 46.3,
+          "outcome": "DISCOVERY_ONLY",
+          "http_status": 200
+        },
+        {
+          "after_seconds": 100.7,
+          "outcome": "READ_SUCCEEDED",
+          "http_status": 200
+        }
+      ],
+      "list_after_patch": [
+        "72.83.83.x/24#sha12=0af7da533bad"
+      ],
+      "list_read_back_status": 200,
+      "last_observation": {
+        "label": "phase_1_operator_allowed#2",
+        "at": "2026-10-21T13:41:30.219556Z",
+        "outcome": "READ_SUCCEEDED",
+        "http_status": 200,
+        "error_code": "",
+        "error_message": "",
+        "steps": {
+          "list_shares": {
+            "status": 200,
+            "shares_visible": [
+              "awoz1227-psp7-demo-share"
+            ],
+            "body": "{\"items\":[{\"name\":\"awoz1227-psp7-demo-share\",\"id\":\"3604b4ba-892d-4f31-a5ac-fadcba237533\",\"has_genie_space\":false}]}"
+          },
+          "list_tables": {
+            "status": 200,
+            "tables_visible": [
+              "v_entitled_t2"
+            ],
+            "body": "{\"items\":[{\"name\":\"v_entitled_t2\",\"schema\":\"opensharing_test\",\"share\":\"awoz1227-psp7-demo-share\",\"share_id\":\"3604b4ba-892d-4f31-a5ac-fadcba237533\",\"id\":\"1c971d35-bc76-4542-ae9b-3f4a3813d01c\",\"comment\":\"AWOZ-1227 entitled view. tier=T2 dsa_ref=DSA-AWOZ-1227-PSP7-001 (PLACEHOLDER) purpose=CDAO PSP7 egress demo -- column scope row_scope=ALL_ROWS defined_by=iac/config/entitlements.yaml\",\"accessModes\":"
+          },
+          "table_metadata": {
+            "status": 200,
+            "body": "{\"protocol\":{\"minReaderVersion\":1}}\n{\"metaData\":{\"id\":\"1c971d35-bc76-4542-ae9b-3f4a3813d01c\",\"format\":{\"provider\":\"parquet\"},\"schemaString\":\"{\\\"type\\\":\\\"struct\\\",\\\"fields\\\":[{\\\"name\\\":\\\"record_id\\\",\\\"type\\\":\\\"long\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}},{\\\"name\\\":\\\"agency_name\\\",\\\"type\\\":\\\"string\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}},{\\\"name\\\":\\\"use_case\\\",\\\"type\\\":\\\"string\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}},{\\\"name\\\":\\\"region\\\",\\\"type\\\":\\\"string\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}},{\\\"name\\\":\\\"record_date\\\",\\\"type\\\":\\\"date\\\",\\\"nullable\\\":true,\\\"metadata\\\":{}},{\\\"name\\\":\\\"metric_value\\\",\\\"type\\\""
+          },
+          "query": {
+            "status": 200,
+            "file_lines": 1,
+            "body_length": 2582,
+            "body": "<withheld: carries pre-signed URLs>"
+          }
+        },
+        "share_granted_visible": true,
+        "data_served": true
+      },
+      "settled_after_seconds": 100.7,
+      "verdict": "SETTLED_AS_EXPECTED",
+      "means": "THE POSITIVE CONTROL. The declared test-net address is removed and only the operator's is present, so phase 1 and phase 2 differ in the allow-list and in nothing else -- not the credential, not the grant, not the share, not the client, not the endpoint."
+    },
+    "phase_1b_gateway_same_egress": {
+      "gateway_edge": "http://localhost:8082",
+      "observation": {
+        "label": "phase_1b_via_gateway",
+        "at": "2026-10-21T13:41:30.355235Z",
+        "outcome": "UNCLASSIFIED_HTTP_404",
+        "http_status": 404,
+        "error_code": "ENDPOINT_NOT_FOUND",
+        "error_message": "No API found for 'GET /delta-sharing/shares'",
+        "steps": {
+          "list_shares": {
+            "status": 404,
+            "shares_visible": [],
+            "body": "{\"error_code\":\"ENDPOINT_NOT_FOUND\",\"message\":\"No API found for 'GET /delta-sharing/shares'\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"79efe737-ffe7-4614-be28-c69c17183be0\",\"serving_data\":\"\"}]}"
+          },
+          "list_tables": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          },
+          "table_metadata": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          },
+          "query": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          }
+        },
+        "share_granted_visible": false,
+        "data_served": false
+      },
+      "allow_list_at_this_moment": "operator address only",
+      "verdict": "GATEWAY_EGRESS_DIFFERS_OR_GATEWAY_UNREACHABLE",
+      "means": "The read through the gateway did not succeed under a list that admits the operator. Either the gateway egresses from a different address -- in which case the perimeter IS locally testable and T-02 should be rebuilt around the gateway's address -- or the gateway is down, or the route is misconfigured. The three are not distinguished by this observation alone; check the gateway before reading this as topology."
+    },
+    "phase_2_operator_excluded": {
+      "label": "phase_2_operator_excluded",
+      "patch_status": 200,
+      "requested": [
+        "203.0.113.5"
+      ],
+      "wait_bound_seconds": 150,
+      "attempts": [
+        {
+          "after_seconds": 0.3,
+          "outcome": "DENIED",
+          "http_status": 403
+        }
+      ],
+      "list_after_patch": [
+        "203.0.113.5"
+      ],
+      "list_read_back_status": 200,
+      "last_observation": {
+        "label": "phase_2_operator_excluded#1",
+        "at": "2026-10-21T13:41:31.551469Z",
+        "outcome": "DENIED",
+        "http_status": 403,
+        "error_code": "PERMISSION_DENIED",
+        "error_message": "Permission denied due to IP address (72.83.83.x/24#sha12=0af7da533bad) not in IP Access List.",
+        "steps": {
+          "list_shares": {
+            "status": 403,
+            "shares_visible": [],
+            "body": "{\"error_code\":\"PERMISSION_DENIED\",\"message\":\"Permission denied due to IP address (72.83.83.x/24#sha12=0af7da533bad) not in IP Access List.\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.RequestInfo\",\"request_id\":\"fee1798e-96da-431c-809e-1ba90ab8dba5\",\"serving_data\":\"\"}]}"
+          },
+          "list_tables": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          },
+          "table_metadata": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          },
+          "query": {
+            "status": null,
+            "means": "Not attempted; /shares was refused."
+          }
+        },
+        "share_granted_visible": false,
+        "data_served": false
+      },
+      "settled_after_seconds": 0.3,
+      "verdict": "SETTLED_AS_EXPECTED"
+    }
+  },
+  "egress_address": {
+    "source": "THIRD_PARTY_ECHO",
+    "echo_host": "api.ipify.org",
+    "quality": "PRESUMED",
+    "means": "The platform's refusal did not name an address, so this is the address a third party saw. If the host has more than one route out it may not be the address Databricks sees, and a phase 1 failure should be read as that before it is read as anything else.",
+    "address_redacted": "72.83.83.x/24#sha12=0af7da533bad"
+  },
+  "verdict": "ENFORCED_MECHANISM_PROVEN",
+  "means": "Same credential, same grant, same share, same client, same endpoint. The read succeeded with the operator's address on the list and was denied without it. The denial is attributable to the allow-list and to nothing else. SCOPE: this proves the MECHANISM enforces. It does not prove the TOPOLOGY claim -- see phase 1b.",
+  "phase_0_consistency": "Phase 0 denied before any mutation, consistent with phase 2.",
+  "restore": {
+    "patch_status": 200,
+    "read_back_status": 200,
+    "list_on_platform_now": [
+      "203.0.113.5/32"
+    ],
+    "declared": [
+      "203.0.113.5/32"
+    ],
+    "verdict": "RESTORED_AND_VERIFIED",
+    "comment_field_still_present": true,
+    "means": "The declared list is back and was re-read to prove it (B-23). The PATCH body carried only ip_access_list, so the comment that carries the dsa_ref and the purpose was checked too -- a partial PATCH that silently blanked it would move the drift into a field nothing in this test looks at."
+  },
+  "scope": "T-02 as run here measures the recipient IP access list as a MECHANISM: configured, then observed to admit and to refuse the same read. It does not measure the perimeter topology the CONOPS assumes -- that the gateway egresses from an address the allow-list can name and the consumer cannot reach from. Phase 1b records why that is not measurable on a single-host deployment.",
+  "still_open": [
+    {
+      "id": "RKI-3",
+      "was": "IP access list enforcement is configured, not observed",
+      "now": "Closed for the mechanism if the verdict is ENFORCED_MECHANISM_PROVEN; the topology half becomes B-35 and stays open."
+    },
+    {
+      "id": "T-03",
+      "note": "T-03 is the same observation at the GATEWAY layer (403 ip-filtering, already passed once on 2026-10-17). It is E2-owned and unaffected by this run, but it now has the attribution procedure it lacked."
+    }
+  ]
+}

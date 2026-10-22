@@ -1,0 +1,89 @@
+{
+  "probe": "d2o provider import (CONOPS 2.4.1 step 5, control-plane half)",
+  "task": "E1 Task 1.10",
+  "gates": [
+    "T-20"
+  ],
+  "date": "2026-10-18T22:33:07.562822Z",
+  "databricks_host": "https://dbc-0c6ebc56-563d.cloud.databricks.com",
+  "credential": {
+    "endpoint": "http://localhost:8086/delta-sharing",
+    "endpoint_host": "localhost",
+    "endpoint_port": 8086,
+    "share_credentials_version": 1,
+    "fields_present": [
+      "bearerToken",
+      "endpoint",
+      "expirationTime",
+      "shareCredentialsVersion"
+    ],
+    "bearer_token_length": 43,
+    "bearer_token_sha256_12": "2544b15200ca",
+    "expiration_time": null
+  },
+  "checks": {
+    "providers_api": {
+      "status": 200,
+      "verdict": "READABLE",
+      "error_code": null,
+      "message": null,
+      "existing_providers": [],
+      "means": "The Delta Sharing recipient API answers and this principal can read it. 0 provider(s) already registered: []."
+    },
+    "create_provider_capability": {
+      "status": 400,
+      "verdict": "PRESENT",
+      "classification": "REFUSED_VALIDATION",
+      "error_code": "INVALID_PARAMETER_VALUE",
+      "message": "DS_INVALID_FIELD: CreateProvider recipient_profile_str.endpoint is not a valid URL.",
+      "endpoint_in_request": null,
+      "live_credential_used": false,
+      "means": "The request was rejected for the CONTENT of the profile, not for the right to make it. CREATE PROVIDER is therefore available on this tier to this principal: step 5's control-plane half is permitted, and anything that stops it later is a routing or endpoint fact, not a tier fact."
+    },
+    "create_provider_live": {
+      "status": 200,
+      "verdict": "CREATED",
+      "error_code": null,
+      "message": null,
+      "endpoint_in_request": "http://localhost:8086/delta-sharing",
+      "live_credential_used": true,
+      "means": "The provider object exists in the metastore. Creation did NOT require the endpoint to be reachable -- so 'the import succeeded' is not evidence that the share is readable, and check 4 is the one that tests the connection."
+    },
+    "show_shares_in_provider": {
+      "status": 400,
+      "verdict": "REFUSED_REACHABILITY",
+      "error_code": "BAD_REQUEST",
+      "message": "DS_FAILED_REQUEST_TO_OPEN_DS_SERVER: Error while connecting to the sharing server at http://localhost:8086/delta-sharing/shares,[Trace Id: 26188f96cbb76838598f1880fe1f92aa] error: class java.lang.SecurityException",
+      "shares": [],
+      "means": "The control plane could not list shares. This is the EXPECTED outcome and the substantive T-20 finding: the endpoint is http://localhost:8086, which resolves inside this machine and nowhere else. Note that even a tunnel would not finish the job -- /query returns pre-signed URLs naming objectstore:8000, and host and port are inside the SigV4 signature (docs/11 B-9), so a cloud consumer can neither resolve nor rewrite them. The control-plane half of step 5 is blocked by TOPOLOGY, not by tier."
+    },
+    "guard_scope": {
+      "status": 404,
+      "verdict": "GUARD_SCOPED_TO_ADDRESS_CLASS",
+      "error_code": "NOT_FOUND",
+      "message": "DS_RESOURCE_NOT_FOUND_ON_DS_SERVER: Resource not found on sharing server\nEndpoint: https://example.com/delta-sharing/shares\nMethod: GET\nHTTP Code: 404\nStatus Line: Not Found\nBody: <!doctype html><html lang=en><head><meta charset=utf-8><link rel=icon href=data:,><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Example Domain</title><style>html{color-scheme:light dark;background:light-dark(#eee,#222)}body{font:16px/1.6 system-ui,sans-serif;max-width:26em;margin:auto;padding:",
+      "endpoint_in_request": "https://example.com/delta-sharing",
+      "live_credential_used": false,
+      "compared_against": "DS_FAILED_REQUEST_TO_OPEN_DS_SERVER: Error while connecting to the sharing server at http://localhost:8086/delta-sharing/shares,[Trace Id: 26188f96cbb76838598f1880fe1f92aa] error: class java.lang.SecurityException",
+      "means": "The error class CHANGED once the endpoint was publicly routable, so the SecurityException in check 4 was about the ADDRESS, not about outbound calls in general. The control plane will call a routable provider. This is the load-bearing result for T-20: Path A is blocked by OUR topology and by nothing a client would inherit, so the \u00a72.4.1 procedure transfers intact and only the hostnames do not (\u00a72.4.3)."
+    }
+  },
+  "cleanup": {
+    "awoz1227_probe_d2o_guardscope": {
+      "delete_status": 200,
+      "verify_status": 404,
+      "verdict": "DELETED",
+      "held_live_credential": false,
+      "means": "Probe provider removed and its absence confirmed."
+    },
+    "awoz1227_probe_d2o_import": {
+      "delete_status": 200,
+      "verify_status": 404,
+      "verdict": "DELETED",
+      "held_live_credential": true,
+      "means": "Probe provider removed and its absence confirmed."
+    }
+  },
+  "verdict": "CONTROL_PLANE_BLOCKED_BY_LOCAL_TOPOLOGY",
+  "t20_design": "T-20 splits along the seam \u00a72.4.1 step 5 already contains. Path A: the control-plane steps, recorded up to the exact call that fails and why. Path B: the connector read, host capture and allow-list, which is where \u00a72.4.3's actual requirement lives -- 'the allow-list is built from that capture'. Capability is PRESENT and the guard is scoped to the address class, so the blocker is OUR loopback endpoint and nothing a client inherits: the procedure transfers intact, and only the hostnames do not."
+}

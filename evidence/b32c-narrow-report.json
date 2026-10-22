@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "B-32c-narrow",
+    "description": "A NARROWED view definition reaches the live consumer (the security-relevant direction)",
+    "expected": "the consumer-side row count DROPPING when the row predicate is narrowed, which is what makes a reduced entitlement effective, and returning when the predicate is put back",
+    "actual": "B32C_NARROWING_DID_NOT_REACH_THE_CONSUMER_REVOKED_ROWS_STILL_READABLE_AFTER_600S",
+    "passed": false,
+    "date": "2026-10-22T07:34:22.436741Z",
+    "evidence_ref": "evidence/b32c-change-propagation-narrow.json"
+  }
+]

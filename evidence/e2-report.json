@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "E-2",
+    "description": "Internal consumer reads the entitled views, never the base table",
+    "expected": "the view's column and row scope demonstrated against the base table as a control, and no granted SELECT on the base table -- with the grant probe proven to move when a real grant is made",
+    "actual": "E2_SCOPE_ENFORCED_AND_DENY_ROW_CLEAN_CONSUMER_IDENTITY_NOT_OBSERVABLE",
+    "passed": true,
+    "date": "2026-10-22T07:21:41.639901Z",
+    "evidence_ref": "evidence/e2-egress-d2d.json"
+  }
+]

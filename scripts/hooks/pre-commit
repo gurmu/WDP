@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# AWOZ-1227 pre-commit hook: no commit may introduce a live credential.
+#
+# Tracked here (not only in .git/hooks/) so that AC6 / T-12 "redeploy
+# from code" reproduces the control and not just the config. .git/hooks
+# is not version-controlled, so a hook that exists only there is lost on
+# every fresh clone.
+#
+# Install:  bash scripts/hooks/install.sh
+set -u
+repo="$(git rev-parse --show-toplevel)"
+cd "$repo" || exit 1
+
+if ! python3 scripts/check_secret_hygiene.py; then
+  echo
+  echo "pre-commit: BLOCKED -- secret hygiene check failed."
+  echo "Fix the violations above, or bypass deliberately with:"
+  echo "    git commit --no-verify"
+  echo "Bypassing is a decision you are recording, not a shortcut."
+  exit 1
+fi

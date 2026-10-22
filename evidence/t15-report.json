@@ -1,0 +1,11 @@
+[
+  {
+    "test_id": "T-15",
+    "description": "Model call through the gateway with injected identity",
+    "expected": "200 through the gateway with no caller credential and with an invalid one, and NOT 200 for a non-approved model path",
+    "actual": "R12A_CONFIRMED_INJECTION_REPLACES_AND_IS_SCOPED",
+    "passed": true,
+    "date": "2026-10-21T21:04:01.807795Z",
+    "evidence_ref": "evidence/t15-model-route.json"
+  }
+]

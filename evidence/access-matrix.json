@@ -1,0 +1,74 @@
+{
+  "task": "E1 1.11",
+  "at": "2026-10-22T07:40:31.842583Z",
+  "status": "provisional, awaiting 1694-G1",
+  "awaiting_input": "1694-G1",
+  "principals": [
+    {
+      "id": "external_recipient",
+      "kind": "delta_sharing_recipient",
+      "implementable": true,
+      "implemented_locally": true,
+      "deny_rows": 5,
+      "deny_rows_tested": 5
+    },
+    {
+      "id": "internal_consumer_group",
+      "kind": "account_group",
+      "implementable": false,
+      "implemented_locally": false,
+      "deny_rows": 2,
+      "deny_rows_tested": 0
+    },
+    {
+      "id": "data_owner",
+      "kind": "account_group",
+      "implementable": false,
+      "implemented_locally": false,
+      "deny_rows": 1,
+      "deny_rows_tested": 0
+    },
+    {
+      "id": "sharing_admin",
+      "kind": "account_group",
+      "implementable": false,
+      "implemented_locally": false,
+      "deny_rows": 2,
+      "deny_rows_tested": 0
+    },
+    {
+      "id": "ingest_job_identity",
+      "kind": "service_principal",
+      "implementable": false,
+      "implemented_locally": false,
+      "deny_rows": 2,
+      "deny_rows_tested": 0
+    },
+    {
+      "id": "gateway_upstream_identity",
+      "kind": "service_principal",
+      "implementable": false,
+      "implemented_locally": false,
+      "deny_rows": 2,
+      "deny_rows_tested": 0
+    }
+  ],
+  "deny_rows_total": 14,
+  "deny_rows_tested": 5,
+  "deny_rows_tested_with_named_gap": 2,
+  "deny_rows_untested": 7,
+  "why_three_counts": "deny_rows_tested counts rows with a test and no residual gap. A row with a verified probe and a named gap is counted separately rather than folded into either side: folded up it overstates coverage, folded down it is indistinguishable from a row nobody has tested. The base-table deny row is the case that forced the distinction -- tests/e2_egress_d2d.py proves the column and row boundary AND proves its own grant probe moves, and still cannot observe consumer identity on this tier.",
+  "object_references_resolved": {
+    "catalog:default": "awoz1227_demo",
+    "schema:default": "awoz1227_demo.opensharing_test",
+    "view:v_entitled_t2": "awoz1227_demo.opensharing_test.v_entitled_t2",
+    "view:v_entitled_t2_us": "awoz1227_demo.opensharing_test.v_entitled_t2_us",
+    "table:test_dataset": "awoz1227_demo.opensharing_test.test_dataset",
+    "current": "metastore:current",
+    "schema:landing": "awoz1227_demo.ingested",
+    "databricks-gpt-oss-20b": "databricks-gpt-oss-20b (literal, unchecked)"
+  },
+  "generated": "iac/databricks/access-matrix.tf",
+  "what_this_is": "The matrix written down precisely enough to be disagreed with. PLAN_ONLY_NOT_APPLIED and PROVISIONAL are separate caveats: the first is a tier limit that a paid account removes, the second is a missing governance input that it does not.",
+  "what_this_is_not": "Not a deployed control. 7 of 14 deny rows have no test at all, and they are the separation-of-duty rows -- untestable in a prototype where one operator wears every hat. This sentence previously counted 9 rows as untested, which was wrong once a deny row acquired a verified probe AND a named residual gap: that row has a test, and saying otherwise understated the one piece of internal-channel evidence E1 actually produced. The ARB package must distinguish three states, not two -- measured and clean, measured with a named gap, and a sentence nobody has tested."
+}

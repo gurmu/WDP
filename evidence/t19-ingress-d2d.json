@@ -1,0 +1,902 @@
+{
+  "test_id": "T-19",
+  "description": "Channel I-1 ingress, D2D pull (CONOPS 2.4.1 D2D column)",
+  "task": "E1 Task 1.10",
+  "date": "2026-10-20T07:22:41.844003Z",
+  "epic": "E1 (T04-10), co-owned by E3 (1227-E3)",
+  "acceptance_criteria": [
+    "AC1",
+    "AC3"
+  ],
+  "preconditions": {
+    "distinct_metastores": {
+      "verdict": "DISTINCT_METASTORES",
+      "source": "evidence/capability-baseline-d2d.json",
+      "primary_sharing_identifier": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+      "glovashu_metastore_id": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+      "glovashu_sharing_identifier": "aws:us-east-2:8875961b-9666-494c-95e2-af6b5b78bd3d"
+    },
+    "ingress_chain_permitted": {
+      "verdict": "PERMITTED",
+      "source": "evidence/capability-baseline-d2d-ingress.json",
+      "runnable_halves": {
+        "share_and_entitled_read": "RUNNABLE",
+        "denial_A_object_outside_share": "RUNNABLE",
+        "denial_B_principal_without_grant": "NOT_RUN",
+        "refresh": "RUNNABLE"
+      }
+    },
+    "direction_excluded": {
+      "verdict": "VISIBILITY_UNVERIFIED",
+      "source": "evidence/d2d-direction-symmetry.json",
+      "poll_bound_seconds": 180
+    },
+    "credential_mode_narrowed": {
+      "verdict": "D2D_SURFACING_ONLY",
+      "source": "evidence/d2d-vs-d2o-same-pair.json"
+    },
+    "attributable_fixture": {
+      "verdict": "CREATED_AND_VERIFIED",
+      "source": "evidence/glovashu-provider-dataset.json",
+      "row_count": 37,
+      "origin_metastore": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+      "table_full_name": "awoz1227_glovashu.opensharing_provider.test_dataset"
+    },
+    "second_identity": {
+      "verdict": "IDENTITY_WITHOUT_CREDENTIAL",
+      "source": "evidence/capability-baseline-d2d-ingress.json",
+      "unexhausted_routes": [
+        "account_oauth_secret_route"
+      ]
+    },
+    "means": "Capability and prior findings only. Nothing here is a T-19 result. The verdicts are read from the files that measured them rather than restated, so this record cannot disagree with its own preconditions."
+  },
+  "poll_bound_seconds": 180,
+  "poll_interval_seconds": 15,
+  "prior_runs": [
+    {
+      "date": "2026-10-20T06:57:33.508172Z",
+      "verdict": "FAIL_ACCESS_CONTROL_LEAK",
+      "part_verdicts": {
+        "part1_native_d2d": "NOT_RUN_CAPABILITY_NAMED",
+        "part2_substitute_ingress": "SUBSTITUTE_INGRESS_WORKS",
+        "part3a_denial_object_scope": "DENIAL_A_DEMONSTRATED",
+        "part3b_denial_identity": "DENIAL_B_FAILED_UNGRANTED_IDENTITY_READ",
+        "part4_refresh": "REFRESH_MEASURED"
+      },
+      "object_visibility": {
+        "polls": 1,
+        "latency_seconds": 5.3,
+        "bound_seconds": 180,
+        "rows_seen": 5,
+        "expected_rows": 5,
+        "last_raw": {
+          "http_status": 200,
+          "state": "SUCCEEDED"
+        },
+        "verdict": "VISIBLE",
+        "means": "Time from the share-membership PATCH to the consumer being able to read the new object through the EXISTING catalog -- no re-import, no catalog recreate. NOT_VISIBLE_WITHIN_BOUND is a bounded negative (180s), not a claim that it never appears (B-21).",
+        "RETRACTED": "This run did not verify that the probe object was absent from the share before the ADD, and the fixed object name means it almost certainly was present from an earlier run. latency_seconds here is the time to count an already-visible table, NOT refresh latency. Retained and labelled rather than deleted: the mismeasurement is itself part of the record. Do not quote this figure in \u00a72.4.1 or \u00a72.4.4."
+      },
+      "carry_forward_prior_probe": null,
+      "poll_bound_seconds": 180
+    }
+  ],
+  "prior_runs_means": "Earlier runs of this same test, carried forward so a later success cannot delete the negative it was derived from (B-19). Retracted claims are LABELLED in place, never removed. Read these before quoting any figure below as the behaviour of the platform: a number that holds in one run and not another is a conditional finding, and the condition is the finding.",
+  "part1_native_d2d": {
+    "role": "glovashu is PROVIDER, primary is CONSUMER (ingress)",
+    "steps": {
+      "create_share": {
+        "status": 400,
+        "verdict": "PERMITTED_PREEXISTING",
+        "error_code": "SHARE_ALREADY_EXISTS",
+        "message": "Share 'awoz1227_t19_d2d_share' already exists",
+        "means": "Share left by an earlier run of this test. Adopted, and recorded as NOT created by this run, so a later 404 naming it is still cross-checked against CREATED_THIS_RUN (B-20)."
+      },
+      "add_table_to_share": {
+        "status": 400,
+        "verdict": "PERMITTED_PREEXISTING",
+        "error_code": "RESOURCE_ALREADY_EXISTS",
+        "message": "Shared Table 'opensharing_provider.test_dataset' already exists"
+      },
+      "create_recipient_for_primary": {
+        "status": 400,
+        "verdict": "PERMITTED_PREEXISTING_ADOPTED",
+        "error_code": "RECIPIENT_ALREADY_EXISTS",
+        "message": "There is already a Recipient object 'awoz1227_p18_glovashu_recipient' with the same sharing identifier 'aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938'.",
+        "platform_constraint": "RECIPIENT_ALREADY_EXISTS on the SHARING IDENTIFIER, not on the name. Databricks allows one D2D recipient per counterparty metastore per provider metastore. NEW BEHAVIOUR, discovered by the first run of this test.",
+        "named_in_error": "awoz1227_p18_glovashu_recipient",
+        "named_is_ours": false,
+        "existing_recipient": {
+          "status": 200,
+          "authentication_type": "DATABRICKS",
+          "data_recipient_global_metastore_id": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+          "activated": null,
+          "points_at_primary": true
+        },
+        "adoption": "ADOPTED",
+        "means": "Adopted 'awoz1227_p18_glovashu_recipient', which already points at the primary over DATABRICKS auth, because the platform will not let a second one exist. NOT registered as created by this run: a later 404 naming it must not be attributed to T-19's cleanup (B-20). The grant and all three read-backs below run against this name, so the chain is measured on the object actually in use."
+      },
+      "grant_share_to_recipient": {
+        "status": 200,
+        "verdict": "PERMITTED",
+        "error_code": "",
+        "message": "",
+        "endpoint": "/api/2.1/unity-catalog/shares/awoz1227_t19_d2d_share/permissions"
+      }
+    },
+    "readbacks": {
+      "grant": {
+        "status": 200,
+        "principal": "awoz1227_p18_glovashu_recipient",
+        "privileges": [
+          "SELECT"
+        ],
+        "verdict": "GRANT_IN_EFFECT",
+        "means": "A grant accepted with 200 and not applied would fully explain an empty provider list downstream."
+      },
+      "share_contents": {
+        "status": 200,
+        "objects": [
+          "awoz1227_glovashu.opensharing_provider.test_dataset"
+        ],
+        "statuses": [
+          "ACTIVE"
+        ],
+        "verdict": "SHARE_NON_EMPTY",
+        "means": "Object STATUS matters as much as presence: ACTIVE vs PERMISSION_DENIED says whether the provider can actually serve what it listed."
+      },
+      "recipient_identifier": {
+        "status": 200,
+        "recipient": "awoz1227_p18_glovashu_recipient",
+        "observed": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+        "expected": "aws:us-east-2:48cda780-1dc7-459d-bee0-77abde9af938",
+        "matches_primary": true,
+        "authentication_type": "DATABRICKS",
+        "activated": null,
+        "means": "A recipient whose identifier does not match the primary's names a different metastore, grants fine, and is invisible here -- indistinguishable from a visibility failure without this check."
+      }
+    },
+    "chain": "COMPLETE",
+    "recipient_in_use": "awoz1227_p18_glovashu_recipient",
+    "consumer_poll": {
+      "endpoint": "/api/2.1/unity-catalog/providers",
+      "polls": 12,
+      "elapsed_seconds": 174.7,
+      "bound_seconds": 180,
+      "last_status": 200,
+      "providers_visible": [
+        "awoz1227_p19_glovashu_provider",
+        "awoz1227_t19_glovashu_provider"
+      ],
+      "attribution_rule": "A provider counts as D2D-surfaced only if authentication_type == DATABRICKS AND data_provider_global_metastore_id contains glovashu's metastore id 8875961b-9666-494c-95e2-af6b5b78bd3d. Presence in the list is not the test.",
+      "d2d_candidates": [],
+      "excluded": [
+        {
+          "name": "awoz1227_p19_glovashu_provider",
+          "authentication_type": "TOKEN",
+          "data_provider_global_metastore_id": null,
+          "fields_from": "list+get",
+          "excluded_because": "authentication_type TOKEN: imported by hand from a credential file, which is the open-protocol path. Its presence says nothing about D2D surfacing. This is the provider that caused the first run's false retraction."
+        },
+        {
+          "name": "awoz1227_t19_glovashu_provider",
+          "authentication_type": "TOKEN",
+          "data_provider_global_metastore_id": null,
+          "fields_from": "list+get",
+          "excluded_because": "authentication_type TOKEN: imported by hand from a credential file, which is the open-protocol path. Its presence says nothing about D2D surfacing. This is the provider that caused the first run's false retraction."
+        }
+      ],
+      "unclassified": [],
+      "refusal": null,
+      "verdict": "NO_D2D_PROVIDER_BOUNDED_NEGATIVE"
+    },
+    "verdict": "NOT_RUN_CAPABILITY_NAMED",
+    "capability_missing": "Automatic provider surfacing on the consuming metastore for a recipient with authentication_type = DATABRICKS.",
+    "means": "The chain was built and every mutation read back (chain=COMPLETE), and no provider ATTRIBUTABLE to glovashu over DATABRICKS auth appeared on the consumer within 174.7s over 12 poll(s) -- 2 provider(s) were present and excluded on recorded attributes, not on name. \u00a72.4.1's D2D steps 5a and 5b therefore have no object to run against. This is the THIRD independent bounded negative for the same capability, after both directions in evidence/d2d-direction-symmetry.json -- and it is reported NOT_RUN with the capability named, NOT as a T-19 failure, because nothing about the CONOPS procedure was shown to be wrong."
+  },
+  "part2_substitute_ingress": {
+    "substitute": true,
+    "why": "The native surfacing step is missing (Part 1). This path exercises the same \u00a72.4.1 sequence over the open protocol so the procedure is evidenced rather than asserted. It is NOT a D2D result.",
+    "steps": {
+      "credential_custody": {
+        "mode_on_arrival": "0o600",
+        "mode_now": "0o600",
+        "arrived_restricted": true,
+        "verdict": "CUSTODY_OK",
+        "means": "CONOPS 3.4.1 step 3 names no file mode, so a browser-downloaded credential lands at the operator's umask while every scripted write is 0600. The runbook defect, not the operator, is the finding (B-25)."
+      },
+      "endpoint_check": {
+        "endpoint_host": "b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com",
+        "verdict": "DEDICATED_SHARING_ENDPOINT",
+        "means": "Expected. Databricks serves open sharing from a dedicated <uuid>.opensharing.<region> host that is neither workspace hostname, so this is normal and NOT a problem. Attributability of the read rests on the row count and origin stamp below, not on this hostname.",
+        "allow_list_implication": "b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com is a REQUIRED outbound destination for ingress over the open protocol and is not derivable from DATABRICKS_HOST or GLOVASHU_HOST. An allow-list built from those two fails closed. Candidate addition to iac/config/outbound-allow-list.yaml; OD-4 and T-20's rendered list both depend on it."
+      },
+      "create_share": {
+        "status": 400,
+        "verdict": "PERMITTED_PREEXISTING",
+        "error_code": "SHARE_ALREADY_EXISTS",
+        "message": "Share 'awoz1227_t19_sub_share' already exists"
+      },
+      "add_table_to_share": {
+        "status": 400,
+        "verdict": "REFUSED_UNCLASSIFIED",
+        "error_code": "RESOURCE_ALREADY_EXISTS",
+        "message": "Shared Table 'opensharing_provider.test_dataset' already exists"
+      },
+      "grant_share_to_token_recipient": {
+        "status": 200,
+        "verdict": "PERMITTED",
+        "error_code": "",
+        "message": "",
+        "recipient": "awoz1227_p19_token_recipient",
+        "provenance": "Recipient minted by scripts/19 --mint and activated by hand. Re-minting is not scripted here: the activation URL is single-use and human-opened. The credential on disk is CORROBORATED as belonging to it by endpoint and token fingerprint, not proven -- the claim the read rests on is attributability of the DATA, below."
+      },
+      "grant_readback": {
+        "status": 200,
+        "privileges": [
+          "SELECT"
+        ],
+        "verdict": "GRANT_IN_EFFECT"
+      },
+      "import_provider": {
+        "status": 400,
+        "verdict": "PERMITTED_PREEXISTING_UPDATED",
+        "error_code": "PROVIDER_ALREADY_EXISTS",
+        "message": "Provider 'awoz1227_t19_glovashu_provider' already exists",
+        "update_status": 200,
+        "means": "Pre-existing provider refreshed with the credential THIS run loaded, so the read below goes through the file on disk."
+      },
+      "list_provider_shares": {
+        "status": 200,
+        "shares": [
+          "awoz1227_t19_sub_share",
+          "awoz1227_p18_glovashu_share"
+        ],
+        "verdict": "SHARES_LISTED",
+        "means": "\u00a72.4.1's SHOW SHARES IN PROVIDER. Reaching this step at all is the D-6 contrast: T-20's Path A created a catalog over a provider it could never reach, and Part 1 could not even produce the object to run this against."
+      },
+      "create_catalog_from_share": {
+        "status": 400,
+        "share": "awoz1227_t19_sub_share",
+        "verdict": "PERMITTED_PREEXISTING",
+        "error_code": "CATALOG_ALREADY_EXISTS",
+        "message": "Catalog 'awoz1227_t19_glovashu_catalog' already exists"
+      },
+      "entitled_read": {
+        "statement": "SELECT count(*) AS n, count(DISTINCT origin_metastore) AS origins, min(origin_metastore) AS origin FROM awoz1227_t19_glovashu_catalog.opensharing_provider.test_dataset",
+        "target": "awoz1227_t19_glovashu_catalog.opensharing_provider.test_dataset",
+        "raw": {
+          "http_status": 200,
+          "state": "SUCCEEDED"
+        },
+        "row_count": 37,
+        "distinct_origins": 1,
+        "origin_metastore": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "row_count_matches_fixture": true,
+        "origin_matches_glovashu": true,
+        "verdict": "READ_ATTRIBUTABLE_TO_GLOVASHU",
+        "means": "The fixture holds 37 rows -- deliberately a different count from the primary's own test_dataset -- each stamped 8875961b-9666-494c-95e2-af6b5b78bd3d. Matching BOTH is what separates reading ACROSS the boundary from reading a local table of the same name. Matching one or neither is a defect or a misdirected provider, not a pass."
+      }
+    },
+    "credential": {
+      "endpoint": "https://b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com/api/2.0/opensharing/metastores/8875961b-9666-494c-95e2-af6b5b78bd3d",
+      "endpoint_host": "b2ee813a-6cf6-4040-85a6-447a81feb26c.opensharing.us-east-2.cloud.databricks.com",
+      "endpoint_port": null,
+      "share_credentials_version": 1,
+      "fields_present": [
+        "bearerToken",
+        "endpoint",
+        "expirationTime",
+        "icebergEndpoint",
+        "shareCredentialsVersion"
+      ],
+      "bearer_token_length": 64,
+      "bearer_token_sha256_12": "5c1ace126e75",
+      "expiration_time": "2026-10-20T22:42:11.423Z"
+    },
+    "shared_schema": "opensharing_provider",
+    "warehouse_id": "8c0153ebb92ae0d4",
+    "verdict": "SUBSTITUTE_INGRESS_WORKS"
+  },
+  "part3a_denial_object_scope": {
+    "steps": {
+      "create_unshared_table": {
+        "target": "awoz1227_glovashu.opensharing_provider.t19_unshared_control",
+        "raw": {
+          "http_status": 200,
+          "state": "SUCCEEDED"
+        },
+        "verdict": "CREATED"
+      },
+      "share_contents_confirm": {
+        "objects": [
+          "awoz1227_glovashu.opensharing_provider.test_dataset",
+          "awoz1227_glovashu.opensharing_provider.t19_refresh_probe"
+        ],
+        "unshared_table_absent": true,
+        "verdict": "CONFIRMED_OUTSIDE_SHARE",
+        "means": "Reads the share's contents back to confirm the subject of the refusal is genuinely outside it. If it IS in the share, a refusal below is a bug, not default-deny."
+      },
+      "read_unshared_through_catalog": {
+        "statement": "SELECT count(*) AS n FROM awoz1227_t19_glovashu_catalog.opensharing_provider.t19_unshared_control",
+        "target": "awoz1227_t19_glovashu_catalog.opensharing_provider.t19_unshared_control",
+        "raw": {
+          "http_status": 200,
+          "state": "FAILED",
+          "error": "{\"error_code\": \"BAD_REQUEST\", \"message\": \"[TABLE_OR_VIEW_NOT_FOUND] The table or view `awoz1227_t19_glovashu_catalog`.`opensharing_provider`.`t19_unshared_control` cannot be found. Verify the spelling and correctness of the schema and catalog.\\nSearch path: [`system`.`session`, `system`.`builtin`, `system`.`ai`, `workspace`.`default`].\\nIf you did not qualify the name with a schema, verify the cur"
+        },
+        "rows_returned": null,
+        "verdict": "REFUSED"
+      }
+    },
+    "paired_control": {
+      "shared_object_read": "READ_ATTRIBUTABLE_TO_GLOVASHU",
+      "shared_object_rows": 37,
+      "unshared_object_read": "REFUSED",
+      "single_variable": "membership of the share; same catalog, same schema, same statement shape, same warehouse, same credential"
+    },
+    "verdict": "DENIAL_A_DEMONSTRATED",
+    "means": "A table the provider owns but did not share is unreadable through the shared catalog, while a shared table in the same schema reads. Share membership is therefore an enforced boundary and not a listing convention -- which is what AC3's purpose-limitation control rests on."
+  },
+  "part3b_denial_identity": {
+    "steps": {
+      "create_principal": {
+        "status": 201,
+        "verdict": "PERMITTED"
+      },
+      "token_acl_grant": {
+        "status": 200,
+        "endpoint": "/api/2.0/permissions/authorization/tokens",
+        "verdict": "PERMITTED",
+        "message": null,
+        "means": "This is the route probe 15 recorded as untried. The 403 it hit was an ACL refusal, and an ACL is configuration, not a tier ceiling -- B-18's distinction, which is exactly the one that turns an untestable half into a testable one."
+      },
+      "mint_obo_token": {
+        "status": 200,
+        "verdict": "PERMITTED",
+        "lifetime_seconds": 1800,
+        "token_fingerprint": "12ec37c67d8f",
+        "token_id": "12ec37c67d8f3ab5b949d13e32ddbac451a03ae82039ebf4992b48ae612a479d",
+        "message": null,
+        "means": "The token VALUE is never recorded -- only a sha256 prefix, so a reader can tell two runs apart without holding a credential. 30-minute lifetime and revoked below, because a long-lived token minted by a test is R4 made worse by us."
+      },
+      "warehouse_grant": {
+        "status": 200,
+        "verdict": "PERMITTED",
+        "means": "Compute access ONLY. Granted before either read so that the two states below differ in the CATALOG grant and nothing else. Without this, a refusal would be equally explained by having no warehouse."
+      },
+      "principal_entitlements": {
+        "wanted": [
+          "workspace-access",
+          "databricks-sql-access"
+        ],
+        "before": [],
+        "missing_before": [
+          "workspace-access",
+          "databricks-sql-access"
+        ],
+        "patch_status": 200,
+        "after": [
+          "workspace-access",
+          "databricks-sql-access"
+        ],
+        "readback_status": 200,
+        "verdict": "ENTITLED",
+        "means": "A principal without workspace-access is refused the SQL execution API with 403 and an empty error body -- indistinguishable from a UC denial. Held constant across both reads so the only variable between them stays the catalog grant. NOT_ENTITLED here means the two reads below measure entitlement, not grants, and neither one is a denial result."
+      },
+      "ungranted_state_verified": {
+        "principal_groups": [],
+        "groups_considered": [
+          "account users",
+          "users"
+        ],
+        "levels": {
+          "catalog": {
+            "held_before": [],
+            "revoke_attempted": false,
+            "revoke_succeeded": null,
+            "held_after_revoke": [],
+            "all_principals_with_privileges": {},
+            "inherited_via_groups": {}
+          },
+          "schema": {
+            "held_before": [],
+            "revoke_attempted": false,
+            "revoke_succeeded": null,
+            "held_after_revoke": [],
+            "all_principals_with_privileges": {},
+            "inherited_via_groups": {}
+          },
+          "table": {
+            "held_before": [],
+            "revoke_attempted": false,
+            "revoke_succeeded": null,
+            "held_after_revoke": [],
+            "all_principals_with_privileges": {},
+            "inherited_via_groups": {}
+          }
+        },
+        "explicit_privileges_clean": true,
+        "inheritance_candidates": {},
+        "verdict": "UNGRANTED_CONFIRMED",
+        "means": "The ungranted half of the pair, turned from an assumption into a measurement. PRESTATE_DIRTY means the principal still holds privileges that could not be cleared, so the read below is not an ungranted read and must not be graded as one. UNGRANTED_WITH_GROUP_INHERITANCE means a group this principal belongs to holds privileges on the securable -- a successful read would then be the grant model working as configured, which is a finding about OUR configuration and not a platform leak."
+      },
+      "read_without_grant": {
+        "statement": "SELECT count(*) AS n FROM awoz1227_t19_glovashu_catalog.opensharing_provider.test_dataset",
+        "raw": {
+          "http_status": 200,
+          "state": "FAILED",
+          "error": "{\"error_code\": \"BAD_REQUEST\", \"message\": \"[INSUFFICIENT_PERMISSIONS] Insufficient privileges:\\nUser does not have USE CATALOG on Catalog 'awoz1227_t19_glovashu_catalog'. SQLSTATE: 42501\"}"
+        },
+        "rows_returned": null,
+        "as_identity": "5f660c22-3fe8-4029-bfdf-f7f78cd231da",
+        "verdict": "REFUSED",
+        "means": "Default deny, measured. T-20 could not demonstrate this: its grants went to 'account users', which on this tier is effectively everyone, so default deny was asserted by the procedure rather than shown."
+      },
+      "grant_catalog_to_principal": {
+        "levels": {
+          "catalog": {
+            "requested": [
+              "USE_CATALOG",
+              "SELECT"
+            ],
+            "status": 200,
+            "verdict": "PERMITTED",
+            "message": null,
+            "readback_status": 200,
+            "privileges_in_effect": [
+              "SELECT",
+              "USE_CATALOG"
+            ],
+            "readback_verdict": "IN_EFFECT",
+            "securable": "catalog",
+            "full_name": "awoz1227_t19_glovashu_catalog",
+            "required_for_traversal": true,
+            "spelling_attempts": {
+              "underscore": {
+                "requested": [
+                  "USE_CATALOG",
+                  "SELECT"
+                ],
+                "status": 200,
+                "verdict": "PERMITTED",
+                "message": null,
+                "readback_status": 200,
+                "privileges_in_effect": [
+                  "SELECT",
+                  "USE_CATALOG"
+                ],
+                "readback_verdict": "IN_EFFECT"
+              }
+            },
+            "spelling_honoured": "underscore"
+          },
+          "schema": {
+            "requested": [
+              "USE_SCHEMA"
+            ],
+            "status": 200,
+            "verdict": "PERMITTED",
+            "message": null,
+            "readback_status": 200,
+            "privileges_in_effect": [
+              "USE_SCHEMA"
+            ],
+            "readback_verdict": "IN_EFFECT",
+            "securable": "schema",
+            "full_name": "awoz1227_t19_glovashu_catalog.opensharing_provider",
+            "required_for_traversal": true,
+            "spelling_attempts": {
+              "underscore": {
+                "requested": [
+                  "USE_SCHEMA"
+                ],
+                "status": 200,
+                "verdict": "PERMITTED",
+                "message": null,
+                "readback_status": 200,
+                "privileges_in_effect": [
+                  "USE_SCHEMA"
+                ],
+                "readback_verdict": "IN_EFFECT"
+              }
+            },
+            "spelling_honoured": "underscore"
+          },
+          "table": {
+            "requested": [
+              "SELECT"
+            ],
+            "status": 200,
+            "verdict": "PERMITTED",
+            "message": null,
+            "readback_status": 200,
+            "privileges_in_effect": [
+              "SELECT"
+            ],
+            "readback_verdict": "IN_EFFECT",
+            "securable": "table",
+            "full_name": "awoz1227_t19_glovashu_catalog.opensharing_provider.test_dataset",
+            "required_for_traversal": false,
+            "spelling_attempts": {
+              "underscore": {
+                "requested": [
+                  "SELECT"
+                ],
+                "status": 200,
+                "verdict": "PERMITTED",
+                "message": null,
+                "readback_status": 200,
+                "privileges_in_effect": [
+                  "SELECT"
+                ],
+                "readback_verdict": "IN_EFFECT"
+              }
+            },
+            "spelling_honoured": "underscore"
+          }
+        },
+        "verdict": "PERMITTED",
+        "all_in_effect": true,
+        "api_privilege_spelling": {
+          "catalog": "underscore",
+          "schema": "underscore",
+          "table": "underscore"
+        },
+        "means": "Three levels because UC traversal needs three: USE CATALOG, USE SCHEMA, and SELECT. The first run granted catalog scope alone and the granted read was refused -- a missing USE SCHEMA refuses identically to a correct default deny, which is why that run could not attribute its own refusal. The readback column is what distinguishes an accepted grant from an applied one; the first run had no such column, so a 200 stood in for a fact (B-23). Verdict counts the levels REQUIRED for traversal only. api_privilege_spelling records which dialect the API actually honoured at each level -- NEITHER there means the grant never applied, whatever the status said, and the read below cannot be read as a denial."
+      },
+      "read_with_grant": {
+        "statement": "SELECT count(*) AS n FROM awoz1227_t19_glovashu_catalog.opensharing_provider.test_dataset",
+        "raw": {
+          "http_status": 200,
+          "state": "SUCCEEDED"
+        },
+        "polls": 1,
+        "waited_seconds": 4.6,
+        "bound_seconds": 120,
+        "row_count": 37,
+        "verdict": "READ_SUCCEEDED",
+        "means": "The POSITIVE control. If the grant does not open the read, the refusal above is unattributable: it could be the grant model, the shared catalog, or the principal's compute access, and we would not know which. Polled rather than read once, so a refusal here is not merely 'we asked too early'."
+      },
+      "refusal_comparison": {
+        "without_grant": {
+          "http_status": 200,
+          "state": "FAILED",
+          "error": "{\"error_code\": \"BAD_REQUEST\", \"message\": \"[INSUFFICIENT_PERMISSIONS] Insufficient privileges:\\nUser does not have USE CA"
+        },
+        "with_grant": {
+          "http_status": 200,
+          "state": "SUCCEEDED",
+          "error": "None"
+        },
+        "identical": false,
+        "means": "Identical refusal shapes mean the grant made no observable difference, so the pair measures something upstream of grants -- entitlement, traversal, or the shared catalog -- and not default deny. Different shapes narrow it. NOTE: identical SUCCESS shapes are not a refusal comparison at all -- read the verdict, which distinguishes them."
+      },
+      "api_privilege_dialect_probe": {
+        "securable": "catalog awoz1227_t19_glovashu_catalog",
+        "cleared_first": [
+          "SELECT",
+          "USE_CATALOG"
+        ],
+        "requested": [
+          "USE CATALOG"
+        ],
+        "patch_status": 200,
+        "patch_message": null,
+        "stored": [
+          "USE_CATALOG"
+        ],
+        "verdict": "SPACED_NORMALISED_TO_UNDERSCORE",
+        "means": "Which privilege dialect the REST API honours is not a T-19 question, it is an IaC question: every GRANT in iac/ will carry one spelling, and SPACED_ACCEPTED_THEN_DISCARDED would mean the wrong one fails with a 200 and no message. Measured here because this is the only place in the repo with a live principal and a securable to measure it on. Supersedes the unsupported claim made after the third run (B-19: the claim is labelled retracted, not deleted)."
+      },
+      "post_revert_state": {
+        "catalog": [],
+        "schema": [],
+        "table": [],
+        "verdict": "CLEAN"
+      },
+      "revoke_obo_token": {
+        "status": 200,
+        "verdict": "REVOKED",
+        "means": "A test-minted credential outliving the test is R4 made worse by us. If this says REVOKE_FAILED, revoke it by hand -- the token id is recorded above and the value was never stored."
+      }
+    },
+    "prior_finding": {
+      "verdict": "IDENTITY_WITHOUT_CREDENTIAL",
+      "source": "evidence/capability-baseline-d2d-ingress.json",
+      "unexhausted_routes": [
+        "account_oauth_secret_route"
+      ],
+      "means": "Probe 15 created a service principal and was refused a token for it: PERMISSION_DENIED, 'does not have permission to use tokens'. That refusal is about an ACL this test can set, so the prior NOT_RUN was bounded by what the probe tried, not by the tier."
+    },
+    "principal": {
+      "display_name": "awoz1227_t19_denial_b_principal_1792481177",
+      "application_id": "5f660c22-3fe8-4029-bfdf-f7f78cd231da",
+      "scim_id": "76404679746260",
+      "fresh_this_run": true,
+      "provenance": "Created for this run and never granted anything before it, so the ungranted state is structural."
+    },
+    "verdict": "DENIAL_B_DEMONSTRATED",
+    "means": "A second, real identity was refused the shared catalog with no grant and served it with one. Two states, one variable. This closes the half probe 15 reported NOT_RUN under IDENTITY_WITHOUT_CREDENTIAL, and it demonstrates the default deny that T-20 could only assert. Carry the earlier NOT_RUN forward as superseded rather than deleting it (B-19): it was correct about the routes it had tried."
+  },
+  "part4_refresh": {
+    "questions": [
+      "object_visibility",
+      "row_visibility"
+    ],
+    "steps": {
+      "provider_seed": {
+        "target": "awoz1227_glovashu.opensharing_provider.t19_refresh_probe_1792481192",
+        "batch": 1,
+        "rows": 5,
+        "stamped": "8875961b-9666-494c-95e2-af6b5b78bd3d",
+        "means": "A dedicated refresh table. The 37-row fixture is NOT touched: it is the attributability basis for every read in this repo and a test that erodes its own control is worse than no test."
+      },
+      "carry_forward_prior_probe": {
+        "object": "awoz1227_t19_glovashu_catalog.opensharing_provider.t19_refresh_probe",
+        "candidates_in_share": [
+          {
+            "leaf": "t19_refresh_probe",
+            "added_at": 1792453570250
+          }
+        ],
+        "candidates_added_after_catalog": [
+          "t19_refresh_probe"
+        ],
+        "chosen_because": "oldest object added after the catalog was created",
+        "readable_now": true,
+        "rows": 8,
+        "provider_side_exists": true,
+        "provider_side_raw": null,
+        "share_added_at": 1792453570250,
+        "catalog_created_at": 1792453512607,
+        "ordering": "OBJECT_ADDED_AFTER_CATALOG_CREATED",
+        "age_hours_since_added": 7.7,
+        "prior_bounded_negative_seconds": 170.8,
+        "prior_bounded_negative_source": "RETYPED FROM RUN 1'S CONSOLE OUTPUT, not read from disk -- run 3 overwrote the evidence file before the prior_runs carry-forward existed, so 170.8s now survives only in the session transcript. Flagged because every other precondition in this file is read from a file, and a retyped number is one edit away from disagreeing with its source. From this run on, prior figures come from results.prior_runs.",
+        "share_read_status": 200,
+        "catalog_read_status": 200,
+        "last_raw": null,
+        "verdict": "STANDING_OBJECT_NOW_READABLE_CATALOG_DOES_REFRESH",
+        "means": "Run 1's 170.8s bounded negative, re-read after 7.7h on a catalog that has not been recreated. CATALOG_DOES_REFRESH = the object list is not frozen at CREATE CATALOG, so \u00a72.4.1 needs a timing note and not a re-import step. NEGATIVE_EXTENDED = still absent after all that time, which is the snapshot-at-create reading and a procedure change. PROVES_NOTHING / NOT_EVIDENCE / UNATTRIBUTABLE = the ordering, or a source table that no longer exists on the provider, stops this read discriminating; the unique-name probe below is then the only instrument and this step must not be quoted as support (B-23b)."
+      },
+      "add_to_share": {
+        "status": 200,
+        "object": "t19_refresh_probe_1792481192",
+        "present_before": false,
+        "present_after": true,
+        "membership_new": true,
+        "already_exists_in_body": false,
+        "readback_status": 200,
+        "verdict": "PERMITTED_NEW_MEMBERSHIP",
+        "means": "The stopwatch below only measures refresh if this PATCH put something in the share that was not there before. Run 3's did not, and the elapsed time was printed as a latency regardless. present_before is read from the share, not inferred from the status code."
+      },
+      "object_visibility": {
+        "polls": 12,
+        "latency_seconds": 170.8,
+        "bound_seconds": 180,
+        "rows_seen": null,
+        "expected_rows": 5,
+        "last_raw": {
+          "http_status": 200,
+          "state": "FAILED",
+          "error": "{\"error_code\": \"BAD_REQUEST\", \"message\": \"[TABLE_OR_VIEW_NOT_FOUND] The table or view `awoz1227_t19_glovashu_catalog`.`opensharing_provider`.`t19_refresh_probe_1792481192` cannot be found. Verify the spelling and correctness of the schema and catalog.\\nSearch path: [`system`.`session`, `system`.`builtin`, `system`.`ai`, `workspace`.`default`].\\nIf you did not qualify the name with a schema, verify"
+        },
+        "verdict": "NOT_VISIBLE_WITHIN_BOUND",
+        "means": "Time from the share-membership PATCH to the consumer being able to read the new object through the EXISTING catalog -- no re-import, no catalog recreate. The object is t19_refresh_probe_1792481192, unique to this run and confirmed absent from the share before the PATCH, so this is time-to-appear. NOT_VISIBLE_WITHIN_BOUND is a bounded negative (180s), not a claim that it never appears (B-21)."
+      },
+      "object_metadata_check": {
+        "status": 200,
+        "endpoint": "/api/2.1/unity-catalog/tables?catalog_name=awoz1227_t19_glovashu_catalog",
+        "tables_listed": [
+          "t19_refresh_probe",
+          "test_dataset"
+        ],
+        "probe_table": "t19_refresh_probe_1792481192",
+        "probe_table_listed": false,
+        "verdict": "ABSENT_FROM_CONSUMER_METADATA",
+        "means": "Separates 'the object is not in the consumer's catalog' from 'it is there and the read failed'. Those have different causes and the SELECT refuses identically for both."
+      },
+      "catalog_recreate_discriminator": {
+        "verdict": "NOT_RUN_ALREADY_ANSWERED_BY_CARRY_FORWARD",
+        "carry_forward_verdict": "STANDING_OBJECT_NOW_READABLE_CATALOG_DOES_REFRESH",
+        "means": "Skipped deliberately. The carry-forward read shows an object added AFTER this catalog was created is readable through it, so the snapshot-at-create hypothesis is already excluded and this run's miss is latency past 180s. Running the recreate would reset catalog_created_at and destroy run 1's standing negative to re-derive a conclusion already in hand (B-19)."
+      },
+      "row_visibility": {
+        "verdict": "NOT_RUN",
+        "means": "The probe object is not readable yet, so there is nothing to append to. NOT_RUN rather than blank: \u00a72.4.4 needs this number and a missing one must not read as zero."
+      },
+      "probe_cleanup": {
+        "object": "awoz1227_glovashu.opensharing_provider.t19_refresh_probe_1792481192",
+        "verdict": "PROBE_LEFT_DELIBERATELY",
+        "means": "Left in the share on purpose. It was added at a known time to a catalog of known age and was not visible within 180s, so the next run's carry_forward_prior_probe can read it and turn this bounded negative into a real upper bound for free. Deleting it would throw away the only cheap instrument for the one number this run could not produce."
+      }
+    },
+    "verdict": "REFRESH_OBJECT_LATENCY_EXCEEDS_BOUND",
+    "conops_implication": "A newly shared object was not readable through the existing catalog within 170.8s over 12 poll(s), but a previously shared object added after that catalog was created IS readable (7.7h later). So the consumer's object list does refresh without a re-import, and the refresh is slower than 180s. \u00a72.4.1 needs a timing expectation here -- a consumer that polls for three minutes and concludes the share is wrong will raise a false defect. The exact upper bound is NOT measured by this run and should not be quoted as one."
+  },
+  "part5_d6_contrast": {
+    "defect": "D-6",
+    "t20_path_a": {
+      "source": "evidence/t20-ingress-d2o.json",
+      "steps": {
+        "5a_import_provider": "IMPORTED",
+        "5b_confirm_shares": "REFUSED_REACHABILITY",
+        "5c_create_catalog": "CREATED",
+        "6_grant": "GRANTED"
+      },
+      "verdict": "BLOCKED_BY_LOCAL_TOPOLOGY_ATTRIBUTED"
+    },
+    "t19_here": {
+      "shares_listed": [
+        "awoz1227_t19_sub_share",
+        "awoz1227_p18_glovashu_share"
+      ],
+      "verdict": "SHARES_LISTED",
+      "native_d2d_had_no_object_to_query": "NOT_RUN_CAPABILITY_NAMED"
+    },
+    "contrast": "In T-20, step(s) ['5b_confirm_shares'] failed against an unreachable provider and step(s) ['5c_create_catalog', '6_grant'] then SUCCEEDED anyway, so those later successes described nothing readable. Here the enumeration step that failed there returns ['awoz1227_t19_sub_share', 'awoz1227_p18_glovashu_share'] -- real share names from a reachable provider. One field against another field: the control plane does not require the provider to be reachable in order to accept catalog creation and grants against it.",
+    "contrast_derivation": "The step names above are read from T-20's own record, not named in this file, so this sentence cannot describe a run that did not happen (B-23b).",
+    "conops_consequence": "Any runbook step that treats a 200 from CREATE CATALOG as evidence that the share is readable is unsound. \u00a72.4.1 step 5c needs a read-back -- which is B-23 as a procedure change, not just a scripting habit.",
+    "verdict": "D6_CONTRAST_CAPTURED"
+  },
+  "role_table": [
+    {
+      "role": "Requester",
+      "held_by_conops": "Consuming team",
+      "hat_worn_here": "CONOPS owner as requester",
+      "steps": [
+        "1"
+      ],
+      "status": "SIMULATED_SINGLE_OPERATOR",
+      "note": "No ticket system; the request is this record."
+    },
+    {
+      "role": "Approver",
+      "held_by_conops": "Data Governance",
+      "hat_worn_here": "CONOPS owner as approver",
+      "steps": [
+        "1"
+      ],
+      "status": "SIMULATED_SINGLE_OPERATOR",
+      "note": "A1 unmet (1694-G1 has not arrived), so the approval is provisional and labelled, not governance sign-off."
+    },
+    {
+      "role": "Provider / sharing admin",
+      "held_by_conops": "External provider organisation",
+      "hat_worn_here": "CONOPS owner on the glovashu account",
+      "steps": [
+        "2",
+        "3"
+      ],
+      "status": "EXERCISED",
+      "note": "A genuinely separate account and metastore, and NOT an arm's-length counterparty: one operator holds both ends. The share, recipient and grant are real; the negotiation is not."
+    },
+    {
+      "role": "Credential custodian",
+      "held_by_conops": "Data Eng",
+      "hat_worn_here": "CONOPS owner as custodian",
+      "steps": [
+        "4"
+      ],
+      "status": "EXERCISED",
+      "note": "Credential vaulted in _secrets/ at 0600 and hygiene-gated. Its mode ON ARRIVAL is recorded rather than corrected silently (B-25). UNSEPARATED: the same operator also holds the read."
+    },
+    {
+      "role": "Metastore admin / catalog creator",
+      "held_by_conops": "Client-side admin",
+      "hat_worn_here": "CONOPS owner via DATABRICKS_TOKEN",
+      "steps": [
+        "5a",
+        "5b",
+        "5c"
+      ],
+      "status": "EXERCISED",
+      "note": "Import, enumerate and catalog-create all exercised on the substitute path. On the native D2D path 5a and 5b had no object to run against."
+    },
+    {
+      "role": "Catalog owner / grantor",
+      "held_by_conops": "Data owner",
+      "hat_worn_here": "CONOPS owner as catalog owner",
+      "steps": [
+        "6"
+      ],
+      "status": "EXERCISED",
+      "note": "Grant issued to a real second service principal, and the ungranted state measured first. Default deny is DEMONSTRATED here, not asserted -- which is the one thing T-20 could not do, because its grants went to 'account users'."
+    },
+    {
+      "role": "Consumer (entitled)",
+      "held_by_conops": "Entitled group member",
+      "hat_worn_here": "A separate service principal with its own credential",
+      "steps": [
+        "5c",
+        "6"
+      ],
+      "status": "EXERCISED"
+    },
+    {
+      "role": "Consumer (non-entitled)",
+      "held_by_conops": "Non-entitled group member",
+      "hat_worn_here": "The same principal BEFORE its grant",
+      "steps": [
+        "6"
+      ],
+      "status": "EXERCISED",
+      "note": "Two states of one real identity, one variable. Not our own identity with a narrower grant, which would be defect D-2."
+    },
+    {
+      "role": "Security approver",
+      "held_by_conops": "Platform security",
+      "hat_worn_here": "CONOPS owner",
+      "steps": [
+        "allow-list change"
+      ],
+      "status": "SIMULATED_SINGLE_OPERATOR",
+      "note": "The dedicated opensharing endpoint recorded in Part 2 is the allow-list change such an approval would attach to."
+    }
+  ],
+  "step_coverage": [
+    {
+      "step": 1,
+      "name": "Request and approval",
+      "verdict": "SIMULATED",
+      "note": "See role_table; no ticket system in the prototype."
+    },
+    {
+      "step": 2,
+      "name": "Identity exchange",
+      "verdict": "SPLIT",
+      "note": "Native D2D: the primary's sharing identifier was exchanged and read back (NOT_RUN_CAPABILITY_NAMED). Substitute: a credential file, minted by scripts/19 and activated by hand."
+    },
+    {
+      "step": 3,
+      "name": "Provider action",
+      "verdict": "EXERCISED",
+      "note": "Share created, table added, recipient granted SELECT, all four read back on both paths."
+    },
+    {
+      "step": 4,
+      "name": "Custody",
+      "verdict": "EXERCISED",
+      "note": "0600, gitignored, hygiene-gated; arrival mode measured."
+    },
+    {
+      "step": 5,
+      "name": "Connect",
+      "verdict": "SPLIT",
+      "note": "5a/5b on the native D2D path: NOT_RUN_CAPABILITY_NAMED -- no provider object appeared, so there was nothing to enumerate. On the substitute path: SUBSTITUTE_INGRESS_WORKS."
+    },
+    {
+      "step": 6,
+      "name": "Grant and read",
+      "verdict": "EXERCISED",
+      "note": "Entitled read SUBSTITUTE_INGRESS_WORKS; denial by object scope DENIAL_A_DEMONSTRATED; denial by identity DENIAL_B_DEMONSTRATED."
+    },
+    {
+      "step": 7,
+      "name": "Land and validate",
+      "verdict": "OUT_OF_SCOPE",
+      "note": "\u00a72.4.4, test T-22."
+    },
+    {
+      "step": 8,
+      "name": "Register",
+      "verdict": "EXERCISED",
+      "note": "This evidence file is the inventory row: provider, share, catalog, owner, tier, credential expiry, DSA reference pending (OD-5/AC3), plus the refresh figures from Part 4 (REFRESH_OBJECT_LATENCY_EXCEEDS_BOUND)."
+    }
+  ],
+  "role_separation_caveat": "Every \u00a72.4.2 hat except the non-entitled consumer was worn by one operator, so the SEQUENCE and the ARTEFACTS are evidence and the SEGREGATION OF DUTIES is not. The exception matters: if Part 3B demonstrated denial, a second real identity with its own credential was exercised, which is the first genuine separation anywhere in this repo.",
+  "verdict": {
+    "t19": "PARTIAL_WITH_NAMED_GAPS",
+    "native_d2d": "NOT_RUN_CAPABILITY_NAMED",
+    "substitute_ingress": "SUBSTITUTE_INGRESS_WORKS",
+    "denial_object_scope": "DENIAL_A_DEMONSTRATED",
+    "denial_identity": "DENIAL_B_DEMONSTRATED",
+    "refresh": "REFRESH_OBJECT_LATENCY_EXCEEDS_BOUND",
+    "capability_missing": "Automatic provider surfacing on the consuming metastore for a recipient with authentication_type = DATABRICKS.",
+    "conops_change_required": "A newly shared object was not readable through the existing catalog within 170.8s over 12 poll(s), but a previously shared object added after that catalog was created IS readable (7.7h later). So the consumer's object list does refresh without a re-import, and the refresh is slower than 180s. \u00a72.4.1 needs a timing expectation here -- a consumer that polls for three minutes and concludes the share is wrong will raise a false defect. The exact upper bound is NOT measured by this run and should not be quoted as one.",
+    "scope": "What is demonstrated: the \u00a72.4.1 ingress procedure runs end to end against a genuinely separate metastore, rows cross attributably by count and origin stamp, share membership is an enforced boundary, and refresh has two measured numbers. What is NOT demonstrated: native D2D surfacing, which is reported NOT_RUN with the capability named and three independent bounded negatives behind it. The counterparty is a real second account but not an arm's-length organisation, so T-13 is still the only thing that can produce that.",
+    "conops_recommendation": "T-19's native D2D confirming calls should be recorded in v1.6 as NOT_RUN against a named platform capability, with open sharing as the EVIDENCED substitute ingress path rather than a workaround. That is a recommendation the CONOPS owner can take to the corporate discussion with measurements attached, and it converts a dead end into a decision: accept the open-protocol path for D2D ingress, or escalate the surfacing gap to Databricks."
+  }
+}

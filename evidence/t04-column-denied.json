@@ -1,0 +1,38 @@
+[
+  {
+    "test_id": "T-04.1",
+    "description": "internal_notes is absent from the shared object's published schema",
+    "expected": "the column is absent AND all six entitled columns are present",
+    "actual": "EXCLUDED_COLUMN_ABSENT_ENTITLED_COLUMNS_PRESENT",
+    "passed": true,
+    "date": "2026-10-21T13:55:47.311350Z",
+    "evidence_ref": "evidence/t04-report.json"
+  },
+  {
+    "test_id": "T-04.2",
+    "description": "Row scope is observable from the consumer side",
+    "expected": "the recipient's row count agrees with the provider's apply-time count for the scoped view",
+    "actual": "ROW_SCOPE_AGREES_WITH_PROVIDER_SIDE",
+    "passed": true,
+    "date": "2026-10-21T13:55:47.311383Z",
+    "evidence_ref": "evidence/t04-report.json"
+  },
+  {
+    "test_id": "T-04.3",
+    "description": "test_dataset is not reachable through any visible share",
+    "expected": "absent from every share, with a readable sibling object in each as the positive control",
+    "actual": "BASE_TABLE_ABSENT_FROM_EVERY_VISIBLE_SHARE",
+    "passed": true,
+    "date": "2026-10-21T13:55:47.311398Z",
+    "evidence_ref": "evidence/t04-report.json"
+  },
+  {
+    "test_id": "T-04.4",
+    "description": "Naming the excluded column in a query (recorded, not graded)",
+    "expected": "recorded for completeness; predicateHints are advisory so no outcome here is evidence for AC1",
+    "actual": "HINT_IGNORED_NOT_A_CONTROL",
+    "passed": true,
+    "date": "2026-10-21T13:55:47.311407Z",
+    "evidence_ref": "evidence/t04-report.json"
+  }
+]

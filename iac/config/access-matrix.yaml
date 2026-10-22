@@ -1,0 +1,496 @@
+# =====================================================================
+# AWOZ-1227 -- the CONOPS §3.1 access matrix, as configuration
+# =====================================================================
+#
+# E1 Task 1.11.
+#
+#   status: provisional, awaiting 1694-G1
+#
+# That line is not a disclaimer. CONOPS §3.1 presents this matrix and
+# then says it is "for Data Governance to confirm (input 1694-G1)".
+# 1694-G1 has not arrived (assumption A1). So every row below is what
+# the CONOPS proposes, not what anyone has agreed, and the file says so
+# in a field a machine can read rather than in a comment a generator
+# would drop.
+#
+# WHY IT IS WRITTEN AT ALL BEFORE THE INPUT ARRIVES
+# -------------------------------------------------
+# A matrix that is implemented and labelled gives Data Governance
+# something concrete to react to, which is a faster route to 1694-G1
+# than waiting for it. The failure mode of waiting is that the matrix
+# arrives at the ARB as prose and is agreed in prose, and nobody
+# discovers until deployment that two of its rows cannot be expressed
+# on the platform.
+#
+# Two of them cannot. They are marked `implementable: false` with the
+# measurement, not with a guess.
+#
+# WHAT READS THIS FILE
+# --------------------
+#   scripts/31_gen_access_matrix_tf.py   -> iac/databricks/access-matrix.tf
+#   scripts/22_check_cac_config.py       -> consistency checks
+#
+# Nothing APPLIES it. There is no `scripts/NN_build_access_matrix.py`
+# to pair with scripts/24, and the absence is deliberate: four of the
+# six principals below are account-level objects (groups and service
+# principals) and Free Edition exposes no account console and no
+# account-level API (docs/11). A script that "applied" this matrix on
+# this tier would have to invent the principals as workspace-local
+# objects, and would then report success for a model that does not
+# exist as described. The matrix is therefore PLAN_ONLY by the same
+# honesty rule as entitlement.tf -- and unlike entitlement.tf, it is
+# plan-only for a reason that will NOT go away on a paid tier for one
+# of its rows. See `gateway_upstream_identity`.
+#
+# OBJECT NAMES ARE REFERENCES, NOT STRINGS
+# ----------------------------------------
+# Every `object:` below is one of:
+#
+#   catalog:default     the catalog named in entitlements.yaml
+#   schema:default      the schema named in entitlements.yaml
+#   schema:landing      the ingress landing schema (see `schemas:` below)
+#   table:<id>          a base table id from entitlements.yaml
+#   view:<id>           a view id from entitlements.yaml
+#   current             the metastore this workspace is attached to
+#   <literal>           anything else: a serving endpoint name, etc.
+#
+# The generator RESOLVES these against iac/config/entitlements.yaml and
+# EXITS NON-ZERO if a referenced id is not there. The first draft of
+# this file spelled the object names out in full and got three of them
+# wrong -- a catalog that does not exist and a view name invented from
+# memory -- which would have produced a Terraform file granting
+# privileges on nothing and a matrix that reviewed as complete. B-39,
+# which has now cost six defects in this repository: import the rule
+# rather than copy it. The cross-file check is the whole point of the
+# indirection, not an inconvenience of it.
+#
+# A NOTE ON WHAT A ROW IN THIS FILE MEANS
+# ---------------------------------------
+# Each principal carries `grants` (Unity Catalog privileges), `channels`
+# (which of the five channels in channels.yaml it may use) and
+# `must_not` (what it is specifically denied). `must_not` is not
+# decoration: a matrix that lists only what each role CAN do is
+# unfalsifiable, because any over-grant is consistent with it. Every
+# `must_not` entry is a candidate test, and the ones with a test today
+# name it.
+
+schema_version: 1
+
+status: provisional, awaiting 1694-G1
+
+provisional_because:
+  input: 1694-G1
+  assumption: A1
+  owner: Data Governance
+  what_is_being_asked: >-
+    Confirm or correct the six principals, their Unity Catalog
+    privileges, and the deny rows. Specifically: whether the internal
+    consumer group reads the entitled views or the base table (this file
+    says views, and §3.1's own column-scope requirement makes the base
+    table inadmissible); whether the sharing admin may also be the data
+    owner (this file says no, and nothing enforces it locally because
+    the prototype operator is both); and whether the gateway upstream
+    identity is permitted to be a long-lived personal access token
+    pending service-principal support (this file says no and the
+    prototype does it anyway -- see R12b).
+  until_it_arrives: >-
+    Do not cite this matrix as an agreed control in the ARB package.
+    Cite it as the proposal under review, with the two unimplementable
+    rows named on the first page.
+
+conops:
+  document: AWOZ-1227 CONOPS
+  version: "1.5"
+  sections: ["3.1", "3.1.1", "3.1.2", "2.2"]
+  milestone: INC17 / AWOZ-1227
+  epic: 1227-E1 (T04-10)
+  task: "1.11"
+  acceptance_criterion: AC1
+
+# ---------------------------------------------------------------------
+# Schemas this matrix references that entitlements.yaml does not define
+# ---------------------------------------------------------------------
+# entitlements.yaml owns the provider-side schema. The landing schema
+# belongs to ingress and has no definition anywhere yet, so it is
+# declared here and marked -- rather than silently referenced, which
+# would make `schema:landing` resolve to nothing and the ingest
+# identity's grants resolve to nothing with it.
+schemas:
+  landing:
+    name: ingested
+    exists_locally: false
+    exists_locally_because: >-
+      T-19 and T-20 landed their copies into the provider-side schema
+      because the prototype runs both sides. A separate landing schema
+      is what the matrix PROPOSES; nothing has created it. The ingest
+      identity's `must_not` row depends on this separation existing, so
+      the row is untestable until it does.
+    owner_task: E1 Task 1.10 (outstanding)
+
+# ---------------------------------------------------------------------
+# The principals
+# ---------------------------------------------------------------------
+principals:
+
+  - id: external_recipient
+    conops_name: External recipient
+    kind: delta_sharing_recipient
+    description: >-
+      A named counterparty organisation holding a Delta Sharing
+      credential. Not a Databricks identity and holds no Unity Catalog
+      privilege at all -- its access is entirely the share grant plus
+      the recipient's own properties.
+    implementable: true
+    implemented_locally: true
+    local_instances:
+      - awoz1227-psp7-demo-recipient
+      - awoz1227-psp7-t2-us-recipient
+    authentication: TOKEN (D2O) or DATABRICKS (D2D)
+    grants: []
+    grants_note: >-
+      Deliberately empty. A recipient is granted SHARES, not
+      privileges, and the distinction matters to the ARB: there is no
+      privilege to over-grant here, so the blast radius of a leaked
+      recipient credential is exactly the share contents and nothing
+      adjacent. That is one of §6's ARB principles (least privilege on
+      ingress) holding by construction rather than by configuration.
+    shares:
+      - share: awoz1227-psp7-demo-share
+        to: awoz1227-psp7-demo-recipient
+      - share: awoz1227-psp7-t2-us-share
+        to: awoz1227-psp7-t2-us-recipient
+    channels: [E-1, E-3]
+    perimeter_controls:
+      - recipient IP access list (verified on this tier, T-02)
+      - DSA reference on every shared object (T-01 assertion 4)
+      - credential expiry (observed; see the time-box note below)
+    must_not:
+      - what: write to any shared object
+        tested_by: T-21
+        verdict: READ_ONLY_AND_NO_LEAK_BOTH_MEASURED
+      - what: read a column excluded from the entitled view
+        tested_by: T-04
+        verdict: COLUMN_AND_ROW_SCOPE_PROVEN_FROM_THE_CONSUMER_SIDE
+      - what: read the base table
+        tested_by: T-04 (base-table exposure probe)
+      - what: read a share it holds no grant on
+        tested_by: T-19 denial A
+        verdict: DENIAL_A_DEMONSTRATED
+      - what: reach the sharing surface from outside the IP access list
+        tested_by: T-02
+        verdict: ENFORCED_MECHANISM_PROVEN
+
+  - id: internal_consumer_group
+    conops_name: Internal consumer group
+    kind: account_group
+    description: >-
+      Internal analysts reading shared datasets inside the provider's
+      own metastore. Reads the entitled VIEWS, never the base table.
+    implementable: false
+    implementable_because: >-
+      Account-level groups require the account console or the
+      account-level API. Free Edition exposes neither (docs/11
+      environment baseline). The grants below are expressed in
+      Terraform against a group NAME that does not exist on this tier,
+      so the generated resource is reviewable and not appliable.
+    implementable_because_now_measured: >-
+      CONFIRMED BY MEASUREMENT 2026-10-22, having previously been an
+      inference from documentation. A PATCH to
+      /api/2.1/unity-catalog/permissions with a WORKSPACE group as the
+      principal returns 404 PRINCIPAL_DOES_NOT_EXIST: Unity Catalog
+      principals are account-level, so a workspace group -- which this
+      tier CAN create, and three exist -- is invisible to UC and cannot
+      receive a grant. The near-miss is worth recording: workspace
+      groups are creatable here, so a reader skimming for "can I make a
+      group" would have found yes and built the row on a principal UC
+      never sees. Evidence: evidence/e2-egress-d2d.json,
+      capability_baseline.workspace_group_as_uc_principal.
+    what_uc_does_accept: >-
+      Measured in the same run: a service principal addressed by
+      applicationId (200), the built-in `account users` (200), and a
+      user email (200). The service principal display NAME is refused
+      (404 PRINCIPAL_DOES_NOT_EXIST) -- which is the form a human
+      reaches for first, so it is named here as a trap.
+    implemented_locally: false
+    local_substitute: >-
+      The prototype operator's own identity holds these privileges
+      directly. That is a substitution, not an implementation, and it
+      means nothing locally distinguishes this row from the data owner
+      row -- the separation of duty the matrix proposes is UNTESTED, not
+      satisfied.
+    group_name: awoz1227-internal-consumers
+    grants:
+      - on: catalog
+        object: catalog:default
+        privileges: [USE_CATALOG]
+      - on: schema
+        object: schema:default
+        privileges: [USE_SCHEMA]
+      - on: view
+        object: view:v_entitled_t2
+        privileges: [SELECT]
+      - on: view
+        object: view:v_entitled_t2_us
+        privileges: [SELECT]
+    channels: [E-2]
+    must_not:
+      - what: hold SELECT on the base table
+        why: >-
+          §3.1's column scope is implemented by the view's select list.
+          SELECT on the base table makes every exclusion cosmetic. This
+          is the single most important deny row in the matrix.
+        tested_by: tests/e2_egress_d2d.py
+        evidence: evidence/e2-egress-d2d.json
+        tested_on: "2026-10-22"
+        gap: partial
+        what_is_tested: >-
+          The GRANT STATE, with a verified probe. The base table carries
+          no granted SELECT (measured, not assumed), and the probe that
+          says so has been shown to MOVE: the test grants SELECT on the
+          real base table to a real non-owner principal, re-reads and
+          gets VIOLATED naming that principal, then revokes and re-reads
+          and gets CLEAN again. Without that control a clean read would
+          be worthless -- this endpoint returns {} for a securable with
+          no grants AND for one whose grants cannot be read, which is
+          docs/12 §12.9's silent negative in the one check whose job is
+          to notice an exposure.
+        what_is_also_tested: >-
+          The boundary the deny row protects. The excluded column
+          (internal_notes) is refused through BOTH shared views with
+          UNRESOLVED_COLUMN while the same column on the base table
+          returns successfully -- so the column is real and the view is
+          what removes it. Row scope likewise: v_entitled_t2_us returns
+          16 rows against the base table's 50, and 16 is also what the
+          view's own predicate returns when applied directly to the base
+          table, which ties the number to the predicate rather than to
+          coincidence.
+        what_is_still_a_gap: >-
+          The IDENTITY half. No request in the test was issued AS an
+          internal consumer, because no credential can be minted for a
+          non-human principal on this tier -- three endpoints measured
+          at 404 (evidence/e2-egress-d2d.json,
+          capability_baseline.mint_credential_for_non_human_principal).
+          So the test shows the base table carries no granted SELECT and
+          that a grant WOULD be seen; it does not show a consumer
+          attempting the read and being refused. Nor does it exercise
+          ownership chaining -- a reader holding SELECT on the view but
+          not on the base table -- which is the path a real deployment
+          depends on. Both need the principal this tier cannot produce.
+      - what: create or alter a share
+        why: that is the sharing admin's privilege, not a consumer's
+        tested_by: NONE
+        gap: true
+        gap_because: >-
+          Needs the consumer identity this tier cannot produce, for the
+          same reason recorded on the row above. Unlike that row there
+          is no provider-side substitute: "did not create a share" is
+          not a state that can be read off a securable.
+
+  - id: data_owner
+    conops_name: Data owner
+    kind: account_group
+    description: >-
+      Owns the dataset: defines the base table, decides which columns
+      and rows are entitled, and owns the views that express that.
+    implementable: false
+    implementable_because: account-level group, as above
+    implemented_locally: false
+    local_substitute: the prototype operator
+    group_name: awoz1227-data-owners
+    grants:
+      - on: catalog
+        object: catalog:default
+        privileges: [USE_CATALOG]
+      - on: schema
+        object: schema:default
+        privileges: [USE_SCHEMA, CREATE_TABLE]
+      - on: table
+        object: table:test_dataset
+        privileges: [SELECT, MODIFY]
+    channels: []
+    must_not:
+      - what: create a share, or grant a share to a recipient
+        why: >-
+          §3.1 separates owning the data from deciding who outside the
+          organisation receives it. Proposed, not agreed -- this is one
+          of the rows 1694-G1 is being asked about, because in a small
+          team it is commonly the same person and the CONOPS should say
+          so explicitly rather than imply a separation nobody keeps.
+        tested_by: NONE
+        gap: true
+
+  - id: sharing_admin
+    conops_name: Sharing admin
+    kind: account_group
+    description: >-
+      Creates shares and recipients, grants shares to recipients,
+      manages recipient IP access lists and credential rotation.
+    implementable: false
+    implementable_because: account-level group, as above
+    implemented_locally: false
+    local_substitute: the prototype operator
+    group_name: awoz1227-sharing-admins
+    grants:
+      - on: metastore
+        object: current
+        privileges: [CREATE_SHARE, CREATE_RECIPIENT]
+      - on: catalog
+        object: catalog:default
+        privileges: [USE_CATALOG]
+      - on: schema
+        object: schema:default
+        privileges: [USE_SCHEMA]
+      - on: view
+        object: view:v_entitled_t2
+        privileges: [SELECT]
+      - on: view
+        object: view:v_entitled_t2_us
+        privileges: [SELECT]
+    grants_note: >-
+      SELECT on the views is needed to ADD them to a share, which means
+      the sharing admin can read everything it can share. That is not a
+      flaw to be hidden; it is a property of the platform the ARB should
+      be told about, because the matrix otherwise reads as though the
+      sharing admin never sees the data.
+    channels: []
+    must_not:
+      - what: hold SELECT on the base table
+        why: >-
+          Shares contain views by construction (entitlements.yaml), so
+          a sharing admin never needs the base table. Granting it would
+          let the admin add the base table to a share, which is the one
+          action that defeats the whole entitlement model.
+        tested_by: NONE
+        gap: true
+      - what: alter a view's select list
+        why: >-
+          That is the data owner's decision about entitlement. An admin
+          who can widen a view can widen a share without touching the
+          share.
+        tested_by: NONE
+        gap: true
+
+  - id: ingest_job_identity
+    conops_name: Ingest job identity
+    kind: service_principal
+    description: >-
+      The identity under which the §2.4.1 ingress job runs: reads a
+      remote provider's share and writes landed copies into the local
+      catalog.
+    implementable: false
+    implementable_because: >-
+      Service principal support on Free Edition is UNCONFIRMED (A5
+      substitution note, ask 9). Not "unavailable" -- unconfirmed. No
+      probe has been run, so this row is a known unknown rather than a
+      known gap, and that distinction is itself a 1694-G1 input.
+    implemented_locally: false
+    local_substitute: >-
+      T-19 and T-20's ingress ran as the prototype operator. So the
+      ingress procedure is evidenced (T-19 PARTIAL_WITH_NAMED_GAPS,
+      T-20 PASS_WITH_SCOPE) while the IDENTITY under which it should run
+      is not.
+    grants:
+      - on: catalog
+        object: catalog:default
+        privileges: [USE_CATALOG]
+      - on: schema
+        object: schema:landing
+        privileges: [USE_SCHEMA, CREATE_TABLE]
+    channels: [I-1, I-2]
+    must_not:
+      - what: read or write anything in the provider-side schema
+        why: >-
+          Ingress writes to a landing schema. An ingest identity with
+          reach into the provider-side schema turns a compromised ingest
+          job into a provider-side data loss.
+        tested_by: NONE
+        gap: true
+      - what: create shares or recipients
+        tested_by: NONE
+        gap: true
+
+  - id: gateway_upstream_identity
+    conops_name: Gateway upstream identity
+    kind: service_principal
+    description: >-
+      The identity Gravitee presents to Databricks when it proxies a
+      request on the caller's behalf -- the credential injected by the
+      AI route's transform-headers steps.
+    implementable: false
+    implementable_because: >-
+      Two reasons, and they are different sizes. (1) Service principal
+      support on Free Edition is unconfirmed (A5, ask 9), same as the
+      ingest identity. (2) More seriously, the gateway's injected
+      credential is TODAY a long-lived personal access token carrying a
+      human operator's full entitlements (AI-3). That is R12b: R12a
+      ("can the gateway inject an upstream credential") is CONFIRMED and
+      measured by T-15; R12b ("without a long-lived secret") is
+      UNBUILT. So this row is not merely unimplemented on this tier --
+      it names the single largest unmitigated risk in the prototype.
+    implemented_locally: false
+    local_substitute: DATABRICKS_TOKEN, a personal access token
+    local_substitute_consequences:
+      - >-
+        Every request the gateway proxies on the model route reaches
+        Databricks with the operator's entitlements, not the caller's.
+        T-15 measures the injection and confirms it is SCOPED to M1's
+        flow; it does not and cannot make the identity least-privileged.
+      - >-
+        B-48 was found because of this. An unclaimed path through the AI
+        route reached the workspace REST API. The severity depended
+        entirely on whether the injection applied there -- it did not,
+        because the injection sits inside M1's flow -- and the whole
+        finding is one selector edit from being an escalation of this
+        identity. See docs/11 B-48.
+    grants:
+      - on: serving_endpoint
+        object: databricks-gpt-oss-20b
+        privileges: [CAN_QUERY]
+    grants_note: >-
+      CAN_QUERY on ONE endpoint is what this row should hold. What it
+      actually holds is a PAT with the operator's full workspace
+      entitlements. The gap between those two lines is the row's entire
+      content.
+    channels: [E-3]
+    must_not:
+      - what: hold any privilege beyond CAN_QUERY on the named endpoints
+        tested_by: >-
+          PARTIALLY -- T-16 proves the gateway will not FORWARD a
+          request to any path outside the route allow-list, which bounds
+          the identity's reachable surface at the edge. It does not
+          constrain the identity itself: a caller who obtained the
+          injected credential would hold everything it holds.
+        gap: true
+      - what: be a long-lived secret
+        why: R12b
+        tested_by: NONE
+        gap: true
+        severity: highest open item in this matrix
+
+# ---------------------------------------------------------------------
+# What this file cannot express
+# ---------------------------------------------------------------------
+# Emitted into the generated .tf as a `not_expressible` comment block,
+# so the gap is visible in the artifact a reviewer reads rather than
+# only in the source a reviewer might not open.
+not_expressible:
+  - item: account-level groups and service principals
+    why: >-
+      Free Edition exposes no account console and no account-level API.
+      Four of six principals are account-level objects.
+    consequence: >-
+      The generated Terraform names principals that do not exist on this
+      tier. It is reviewable and diffable; it has never been applied and
+      T-12 stays NOT_RUN.
+  - item: the separation-of-duty rows
+    why: >-
+      Every `must_not` concerning one principal not holding another's
+      privilege requires two distinct identities to test. The prototype
+      has one operator wearing every hat.
+    consequence: >-
+      The matrix's deny rows are mostly UNTESTED. The ARB package must
+      say which deny rows have a test (the external recipient's five,
+      all passing) and which have only a sentence (the other nine).
+  - item: short-lived gateway upstream credentials
+    why: R12b is unbuilt
+    consequence: see gateway_upstream_identity above
